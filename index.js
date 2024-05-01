@@ -21,7 +21,6 @@ client.once('ready', () => {
 client.on('messageCreate', async (message) => {
     // Skip messages sent by the bot
     if (message.author.bot) return;
-    console.log('Message:', message.content);
 
     // Check if message is in a different language than English
     const sourceLang = await detectLanguage(message.content);
@@ -44,7 +43,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
             // get the iso code of the language
             const sourceLang = await detectLanguage(message.content);
-            console.log('Translated message:', sourceLang, translatedMessage);
+            console.log('Sending translated message:', translatedMessage);
             // replace certain iso codes with different flags (cs -> cz, zh -> cn, etc.)
             const flag = sourceLang.replace('cs', 'cz').replace('zh', 'cn').replace('tl', 'ph');
 
