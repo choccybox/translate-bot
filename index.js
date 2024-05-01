@@ -1,7 +1,5 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
 
 const client = new Client({
     intents: [
@@ -25,7 +23,10 @@ client.on('messageCreate', async (message) => {
     // Check if message is in a different language than English
     const sourceLang = await detectLanguage(message.content);
     if (sourceLang !== 'en') {
+        console.log('Detected language:', sourceLang);
         const translatedMessage = await translateMessageToEnglish(message);
+        // if translated message is the same as the original message, don't translate
+        if (translatedMessage === message.content) return;
         console.log('Translated message:', translatedMessage);
         // React with globe and x
         message.react('🌐');
@@ -46,7 +47,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
             console.log('Sending translated message:', translatedMessage);
             // replace certain iso codes with different flags (cs -> cz, zh -> cn, etc.)
             const flag = sourceLang.replace('cs', 'cz').replace('zh', 'cn').replace('tl', 'ph');
-
+            
             // Remove all reactions from the message
             message.reactions.removeAll();
 
@@ -75,7 +76,7 @@ async function detectLanguage(text) {
 
 async function translateMessageToEnglish(message) {
     const sourceText = message.content;
-    const sourceLang = 'auto'; // Auto-detect source language
+    const sourceLang = 'auto'; // Detect language automatically
     const targetLang = 'en';   // Translate to English
 
     const text = sourceText.replace(/<@![0-9]+>/g, '').replace(/<#[0-9]+>/g, '');
