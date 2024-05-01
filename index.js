@@ -1,5 +1,4 @@
 const { Client, GatewayIntentBits } = require('discord.js');
-const fetch = require('node-fetch');
 require('dotenv').config();
 
 const client = new Client({
@@ -71,7 +70,8 @@ async function translateMessageToEnglish(message) {
     const targetLang = 'en';   // Translate to English
     
     // Fetch translation from Google Translate API
-    const response = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURI(sourceText)}`);
+    const fetch = await import('node-fetch');
+    const response = await fetch.default(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURI(sourceText)}`);
     const data = await response.json();
     const translatedMessage = data[0][0][0]; // Extract translated text from the response
     
