@@ -1,5 +1,7 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
 
 const client = new Client({
     intents: [
@@ -10,70 +12,61 @@ const client = new Client({
     ],
 });
 
+const translatedMessages = new Set();
+
 client.once('ready', () => {
     console.log('Bot is ready!');
 });
 
-// Store timestamps of users' reactions
-const reactionTimestamps = new Map();
-
 client.on('messageCreate', async (message) => {
     // Skip messages sent by the bot
     if (message.author.bot) return;
-    if (message.mentions.channels.size || message.mentions.users.size) {
-        console.log('Message contains mentions:', message.content);
-        return;
-    }
-    // check if message is in a different language than English
+    console.log('Message:', message.content);
+
+    // Check if message is in a different language than English
     const sourceLang = await detectLanguage(message.content);
     if (sourceLang !== 'en') {
         const translatedMessage = await translateMessageToEnglish(message);
         console.log('Translated message:', translatedMessage);
-        message.react('🌐'); // Add a reaction to the original message
-    } else {
-        return;
+        // React with globe and x
+        message.react('🌐');
     }
 });
 
-// if someone reacts to a message that wasn't in English, send a message with the translation to the user
+// If someone reacts to a message with a globe, check if it's in the .json file and console log true or false
 client.on('messageReactionAdd', async (reaction, user) => {
-    if (user.bot) return;
-    const message = reaction.message;
-    if (message.author.bot) return;
-    const sourceLang = await detectLanguage(message.content);
-    if (sourceLang !== 'en') {
-        const translatedMessage = await translateMessageToEnglish(message);
-        reaction.users.remove(user); // Remove the user's reaction
-        
-        // Check if the user reacted within the last 10 seconds
-        if (reactionTimestamps.has(user.id)) {
-            const lastReactionTime = reactionTimestamps.get(user.id);
-            const currentTime = Date.now();
-            if (currentTime - lastReactionTime < 10000) {
-                // Remove the reaction
-                reaction.users.remove(user);
-                return;
-            }
+    if (reaction.emoji.name === '🌐' && !user.bot) {
+        console.log('User reacted with 🌐');
+        const message = reaction.message;
+        // Check if the message has already been translated
+        if (!translatedMessages.has(message.id)) {
+            // Translate the message
+            const translatedMessage = await translateMessageToEnglish(message);
+
+            // get the iso code of the language
+            const sourceLang = await detectLanguage(message.content);
+            console.log('Translated message:', sourceLang, translatedMessage);
+            // replace certain iso codes with different flags (cs -> cz, zh -> cn, etc.)
+            const flag = sourceLang.replace('cs', 'cz').replace('zh', 'cn').replace('tl', 'ph');
+
+            // Remove reaction
+            reaction.users.remove(user.id);
+
+            // Send the translated message
+            message.channel.send(`:flag_${flag}: ${message.content} -> **${translatedMessage}**`);
+            // Add the message to the set of translated messages
+            translatedMessages.add(message.id);
+        } else {
+            reaction.users.remove(user.id);
+            console.log('Message already translated');
         }
-        
-        // Store the timestamp of the user's reaction
-        reactionTimestamps.set(user.id, Date.now());
-        
-        // get 2 letter ISO code of the language
-        const langCode = sourceLang.split('-')[0];
-        // make a flag emoji :flag_xx:
-        const flag = `:flag_${langCode}:`;
-        // send to channel and delete after 10 seconds
-        message.channel.send(`${flag} ${message.content} -> **${translatedMessage}**`)
-            .then((msg) => {
-                setTimeout(() => {
-                    msg.delete();
-                }, 10000);
-            });
     }
 });
 
 async function detectLanguage(text) {
+    // Remove channel mentions from the text
+    text = text.replace(/<#[0-9]+>/g, '');
+    
     // Fetch language detection from Google Translate API
     const fetch = await import('node-fetch');
     const response = await fetch.default(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURI(text)}`);
@@ -87,10 +80,12 @@ async function translateMessageToEnglish(message) {
     const sourceText = message.content;
     const sourceLang = 'auto'; // Auto-detect source language
     const targetLang = 'en';   // Translate to English
+
+    const text = sourceText.replace(/<@![0-9]+>/g, '').replace(/<#[0-9]+>/g, '');
     
     // Fetch translation from Google Translate API
     const fetch = await import('node-fetch');
-    const response = await fetch.default(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURI(sourceText)}`);
+    const response = await fetch.default(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURI(text)}`);
     const data = await response.json();
     const translatedMessage = data[0][0][0]; // Extract translated text from the response
     
