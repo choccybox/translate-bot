@@ -36,7 +36,6 @@ client.on('messageCreate', async (message) => {
 // If someone reacts to a message with a globe, check if it's in the .json file and console log true or false
 client.on('messageReactionAdd', async (reaction, user) => {
     if (reaction.emoji.name === '🌐' && !user.bot) {
-        console.log('User reacted with 🌐');
         const message = reaction.message;
         // Check if the message has already been translated
         if (!translatedMessages.has(message.id)) {
@@ -49,15 +48,14 @@ client.on('messageReactionAdd', async (reaction, user) => {
             // replace certain iso codes with different flags (cs -> cz, zh -> cn, etc.)
             const flag = sourceLang.replace('cs', 'cz').replace('zh', 'cn').replace('tl', 'ph');
 
-            // Remove reaction
-            reaction.users.remove(user.id);
+            // Remove all reactions from the message
+            message.reactions.removeAll();
 
             // Send the translated message
             message.channel.send(`:flag_${flag}: ${message.content} -> **${translatedMessage}**`);
             // Add the message to the set of translated messages
             translatedMessages.add(message.id);
         } else {
-            reaction.users.remove(user.id);
             console.log('Message already translated');
         }
     }
@@ -65,7 +63,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
 async function detectLanguage(text) {
     // Remove channel mentions from the text
-    text = text.replace(/<#[0-9]+>/g, '');
+    text = text.replace(/<@![0-9]+>/g, '').replace(/<#[0-9]+>/g, '');
     
     // Fetch language detection from Google Translate API
     const fetch = await import('node-fetch');
