@@ -21,7 +21,7 @@ client.on('interactionCreate', (interaction) => {
     if (interaction.commandName === 'translate') {
         const targetMessage = interaction.targetMessage.content;
         // get the content of the message
-        console.log(targetMessage);
+        console.log('original message:' + targetMessage);
         // send the message to translateMessageToEnglish function
         translateMessageToEnglish(targetMessage)
             .then((translatedMessage) => {
@@ -51,6 +51,7 @@ client.on('interactionCreate', (interaction) => {
                         content: `${translatedMessage}`,
                         ephemeral: true,
                     });
+                    console.log('translated message:' + translatedMessage);
                 }
             })
             .catch((error) => {
