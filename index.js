@@ -1,6 +1,6 @@
 const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 require('dotenv').config();
-const registerCommands = require('./registerCommands');
+const registerCommands = require('./registerCommands.js');
 
 const client = new Client({
   intents: [
