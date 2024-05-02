@@ -1,81 +1,93 @@
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 require('dotenv').config();
+const registerCommands = require('./registerCommands');
 
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMessageReactions,
-    ],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMessageReactions,
+  ],
 });
 
-const translatedMessages = new Set();
-
-client.once('ready', () => {
-    console.log('Bot is ready!');
+client.once('ready', async () => {
+  console.log('Bot is ready!');
 });
 
-client.on('messageCreate', async (message) => {
-    // Skip messages sent by the bot
-    if (message.author.bot) return;
+client.on('interactionCreate', (interaction) => {
+    if (!interaction.isMessageContextMenuCommand()) return;
 
-    // Check if message is in a different language than English
-    const sourceLang = await detectLanguage(message.content);
-    if (sourceLang !== 'en') {
-        console.log('Detected language:', sourceLang);
-        const translatedMessage = await translateMessageToEnglish(message);
-        // if translated message is the same as the original message, don't translate
-        if (translatedMessage === message.content) return;
-        console.log('Translated message:', translatedMessage);
-        // React with globe and x
-        message.react('🌐');
+    if (interaction.commandName === 'translate') {
+        const targetMessage = interaction.targetMessage.content;
+        // get the content of the message
+        console.log(targetMessage);
+        // send the message to translateMessageToEnglish function
+        translateMessageToEnglish(targetMessage)
+            .then((translatedMessage) => {
+                // send the translated message to the channel ephemeraly and add a
+                // check if the message was in en or the response was the same as the original message
+                if (translatedMessage === 'en' || translatedMessage === targetMessage) { 
+                    interaction.reply({
+                        content: 'This message is already in English.',
+                        ephemeral: true,
+                    });
+                    return;
+                } else {
+/*                     const showMessage = new ButtonBuilder()
+                    .setCustomId('showtoall')
+                    .setLabel('Show to all?')
+                    .setStyle(ButtonStyle.Secondary);
+
+                    const row = new ActionRowBuilder()
+                    .addComponents(showMessage);
+                    interaction.reply({
+                        content: `${translatedMessage}`,
+                        ephemeral: true,
+                        components: [row],
+                    }); */
+
+                    interaction.reply({
+                        content: `${translatedMessage}`,
+                        ephemeral: true,
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error(error);
+                interaction.reply({
+                    content: `oopsie woopsie, uwu owo something went wrong!`,
+                    ephemeral: true,
+                });
+            });
     }
 });
 
-// If someone reacts to a message with a globe, check if it's in the .json file and console log true or false
-client.on('messageReactionAdd', async (reaction, user) => {
-    if (reaction.emoji.name === '🌐' && !user.bot) {
-        const message = reaction.message;
-        // Check if the message has already been translated
-        if (!translatedMessages.has(message.id)) {
-            // Translate the message
-            const translatedMessage = await translateMessageToEnglish(message);
+// when the button is clicked, send the translated message to the channel
+/* client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isButton()) return;
 
-            // get the iso code of the language
-            const sourceLang = await detectLanguage(message.content);
-            console.log('Sending translated message:', translatedMessage);
-            // replace certain iso codes with different flags (cs -> cz, zh -> cn, etc.)
-            const flag = sourceLang.replace('cs', 'cz').replace('zh', 'cn').replace('tl', 'ph');
-            
-            // Remove all reactions from the message
-            message.reactions.removeAll();
-
-            // Send the translated message
-            message.channel.send(`:flag_${flag}: ${message.content} -> **${translatedMessage}**`);
-            // Add the message to the set of translated messages
-            translatedMessages.add(message.id);
-        } else {
-            console.log('Message already translated');
-        }
+    if (interaction.customId === 'showtoall') {
+        const targetMessage = interaction.message.content;
+        const translatedMessage = targetMessage;
+        // reply to the message that was interacted with without mentioning the user
+        interaction.channel.send(`${interaction.user.username} requested translation from: **${interaction.targetMessage.content}**\n**${targetMessage}**`);
+        // update the message, and set the button to showtoallclicked
+        interaction.update({
+            content: `${translatedMessage}`,
+            components: [new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                .setCustomId('showtoallclicked')
+                .setLabel('Show to all?')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(true),
+            )],
+        });
     }
-});
+}); */
 
-async function detectLanguage(text) {
-    // Remove channel mentions from the text
-    text = text.replace(/<@![0-9]+>/g, '').replace(/<#[0-9]+>/g, '');
-    
-    // Fetch language detection from Google Translate API
-    const fetch = await import('node-fetch');
-    const response = await fetch.default(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURI(text)}`);
-    const data = await response.json();
-    const sourceLang = data[2]; // Extract source language from the response
-    
-    return sourceLang;
-}
-
-async function translateMessageToEnglish(message) {
-    const sourceText = message.content;
+async function translateMessageToEnglish(targetMessage) {
+    const sourceText = targetMessage;
     const sourceLang = 'auto'; // Detect language automatically
     const targetLang = 'en';   // Translate to English
 
@@ -86,8 +98,25 @@ async function translateMessageToEnglish(message) {
     const response = await fetch.default(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURI(text)}`);
     const data = await response.json();
     const translatedMessage = data[0][0][0]; // Extract translated text from the response
-    
-    return translatedMessage;
+
+    // ignore certain languages and pass them through
+/*     const disabledLanguages = ['en', 'ja', 'ko', 'zh', 'zh-CN', 'zh-TW'];
+    if (disabledLanguages.includes(data[2])) {
+        return data[0][0][0];
+    } */
+
+    // get what language the message was translated from
+    const sourceLanguage = data[2];
+    // replace certain iso codes (cs -> cz, zh -> zh-CN, etc) using a map
+    const isoMap = {
+        'cs': 'cz',
+        'zh': 'zh-CN',
+    };
+    const sourceLanguageIso = isoMap[sourceLanguage] || sourceLanguage;
+    // pass to other functions
+    return `:flag_${sourceLanguageIso}: -> **${translatedMessage}**`;
+    // return another message if the message was already in English
 }
+
 
 client.login(process.env.TOKEN);
