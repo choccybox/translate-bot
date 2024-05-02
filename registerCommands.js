@@ -1,10 +1,22 @@
 require('dotenv').config();
-const { ContextMenuCommandBuilder, ApplicationCommandType, ButtonBuilder, ButtonStyle, ActionRowBuilder, REST, Routes } = require('discord.js');
+const { ContextMenuCommandBuilder, ApplicationCommandType, REST, Routes } = require('discord.js');
 
 const commandsData = [
     new ContextMenuCommandBuilder()
-    .setName('translate')
+    .setName('translate to you')
     .setType(ApplicationCommandType.Message),
+
+    new ContextMenuCommandBuilder()
+    .setName('translate to all')
+    .setType(ApplicationCommandType.Message),
+
+/*     new ContextMenuCommandBuilder()
+    .setName('translate to language')
+    .setType(ApplicationCommandType.Message), */
+
+/*      new ContextMenuCommandBuilder()
+     .setName('translate to brainrot')
+     .setType(ApplicationCommandType.Message), */
 ];
 
 const rest = new REST().setToken(process.env.TOKEN);

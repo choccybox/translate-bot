@@ -12,78 +12,157 @@ const client = new Client({
 });
 
 client.once('ready', async () => {
-  console.log('Bot is ready!');
+  console.log(`wake yo ass up bc it's time to go beast mode`);   
+  
 });
 
-client.on('interactionCreate', (interaction) => {
-    if (!interaction.isMessageContextMenuCommand()) return;
+let storedMessageID = null;
+let errorMsg = 'oopsie woopsie, something went fucky wucky owo!'
+const allowedRoles = 
+['1203293769483685908' /*very active level 10*/, 
+'1203044476319440977' /*staff*/, 
+'1203057085432995890' /*managers*/, 
+'1208815004963315772' /*boosters*/,
+'1228329015580954664' /*danny*/,
+'1228386248725364798' /*customer*/,
+];
+const allowedPerms = ['ADMINISTRATOR', 'MANAGE_MESSAGES'];
+const emojiReaction = [
+    '<:catthumb:1235660903601541262>',
+    '<:catthumb2:1235660901571624971>',
+    '<:catthumb3:1235660900057354320>',
+    '<:catthumb4:1235660898408992818>',
+]
 
-    if (interaction.commandName === 'translate') {
-        const targetMessage = interaction.targetMessage.content;
-        // get the content of the message
-        console.log('original message: ' + targetMessage);
-        // send the message to translateMessageToEnglish function
-        translateMessageToEnglish(targetMessage)
+// translate to you
+client.on('interactionCreate', async (interaction) => {
+    if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'translate to you') {
+        const targetMessage = interaction.targetMessage;
+        const targetContent = targetMessage.content;
+
+        translateMessageToEnglish(targetContent)
             .then((translatedMessage) => {
-                // send the translated message to the channel ephemeraly
-                // check if the message is already in English
-                if (translatedMessage === targetMessage) {
+                if (translatedMessage === targetContent) {
+                    console.log(`This message is already in English. -> ${targetContent}`)
                     interaction.reply({
                         content: 'This message is already in English.',
                         ephemeral: true,
                     });
                     return;
                 } else {
-/*                     const showMessage = new ButtonBuilder()
-                    .setCustomId('showtoall')
-                    .setLabel('Show to all?')
-                    .setStyle(ButtonStyle.Secondary);
-
-                    const row = new ActionRowBuilder()
-                    .addComponents(showMessage);
-                    interaction.reply({
-                        content: `${translatedMessage}`,
-                        ephemeral: true,
-                        components: [row],
-                    }); */
-
+                    console.log(`Original message: ${targetContent}`);
+                    console.log(`Translated message: ${translatedMessage}`);
                     interaction.reply({
                         content: `${translatedMessage}`,
                         ephemeral: true,
                     });
-                    console.log('translated message: ' + translatedMessage);
+
+                    storedMessageID = targetMessage.id;
+                    console.log('Original message ID: ' + storedMessageID);
                 }
             })
             .catch((error) => {
                 console.error(error);
                 interaction.reply({
-                    content: `oopsie woopsie, uwu owo something went wrong!`,
+                    content: errorMsg,
                     ephemeral: true,
                 });
             });
     }
 });
 
-// when the button is clicked, send the translated message to the channel
-/* client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isButton()) return;
+// translate to all
+client.on('interactionCreate', async (interaction) => {
+    if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'translate to all') {
+        // before running, check if user has atleast one of the mapped role ids or permissions
+        const member = interaction.member;
+        const hasRole = member.roles.cache.some(role => allowedRoles.includes(role.id));
+        const hasPerm = member.permissions.has(allowedPerms);
+        // if one of the conditions is met, continue, otherwise end interaction
+        if (!hasRole && !hasPerm) {
+            console.log('User does not have the required permissions.');
+            interaction.reply({
+                content: 'You do not have the required permissions to use this command.',
+                ephemeral: true,
+            });
+            return;
+        } else {
+            console.log('User has the required permissions.');
+        }
 
-    if (interaction.customId === 'showtoall') {
-        const targetMessage = interaction.message.content;
-        const translatedMessage = targetMessage;
-        // reply to the message that was interacted with without mentioning the user
-        interaction.channel.send(`${interaction.user.username} requested translation from: **${interaction.targetMessage.content}**\n**${targetMessage}**`);
-        // update the message, and set the button to showtoallclicked
-        interaction.update({
-            content: `${translatedMessage}`,
-            components: [new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                .setCustomId('showtoallclicked')
-                .setLabel('Show to all?')
+        const targetMessage = interaction.targetMessage;
+        const targetContent = targetMessage.content;
+
+        translateMessageToEnglish(targetContent)
+            .then((translatedMessage) => {
+                if (translatedMessage === targetContent) {
+                    console.log(`This message is already in English. -> ${targetContent}`);
+                    interaction.reply({
+                        content: 'This message is already in English.',
+                        ephemeral: true,
+                    });
+                    return;
+                } else {
+                    console.log(`Original message: ${targetContent}`);
+                    console.log(`Translated message: ${translatedMessage}`);
+                    // reply with translation without mentioning the user
+                    targetMessage.reply({
+                        content: translatedMessage,
+                        allowedMentions: { repliedUser: false },
+                    });
+
+                    // end interaction
+                    interaction.reply({
+                        // randomly select an emoji from the array
+                        content: `${emojiReaction[Math.floor(Math.random() * emojiReaction.length)]}`,
+                        ephemeral: true,
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error(error);
+                interaction.reply({
+                    content: errorMsg,
+                    ephemeral: true,
+                });
+            });
+    }
+});
+
+/* client.on('interactionCreate', async (interaction) => {
+    if (interaction.isButton() && interaction.customId === 'showtoall') {
+        if (storedMessageID) {
+            const originalMessage = await interaction.channel.messages.fetch(storedMessageID);
+            const translatedMessage = interaction.message.content;
+
+            // reply without mentioning the user
+            originalMessage.reply({
+                content: translatedMessage,
+                allowedMentions: { repliedUser: false },
+            });
+
+            // disabled button
+            const disabledButton = new ButtonBuilder()
+                .setCustomId('showtoall')
+                .setLabel('Showed to everyone')
                 .setStyle(ButtonStyle.Secondary)
-                .setDisabled(true),
-            )],
-        });
+                .setDisabled(true);
+
+            const row = new ActionRowBuilder()
+                .addComponents(disabledButton);
+
+            // update interaction message
+            interaction.update({
+                content: translatedMessage,
+                ephemeral: true,
+                components: [row],
+            });
+        } else {
+            interaction.reply({
+                content: 'There was an issue retrieving the original message.',
+                ephemeral: true,
+            });
+        }
     }
 }); */
 
