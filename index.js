@@ -25,9 +25,9 @@ client.on('interactionCreate', (interaction) => {
         // send the message to translateMessageToEnglish function
         translateMessageToEnglish(targetMessage)
             .then((translatedMessage) => {
-                // send the translated message to the channel ephemeraly and add a
-                // check if the message was in en or the response was the same as the original message
-                if (translatedMessage === 'en' || translatedMessage === targetMessage) { 
+                // send the translated message to the channel ephemeraly
+                // check if the message is already in English
+                if (translatedMessage === targetMessage) {
                     interaction.reply({
                         content: 'This message is already in English.',
                         ephemeral: true,
@@ -100,10 +100,10 @@ async function translateMessageToEnglish(targetMessage) {
     const translatedMessage = data[0][0][0]; // Extract translated text from the response
 
     // ignore certain languages and pass them through
-/*     const disabledLanguages = ['en', 'ja', 'ko', 'zh', 'zh-CN', 'zh-TW'];
+    const disabledLanguages = ['en', 'so', 'tl', 'vi', 'zh', 'fy'];
     if (disabledLanguages.includes(data[2])) {
         return data[0][0][0];
-    } */
+    } 
 
     // get what language the message was translated from
     const sourceLanguage = data[2];
@@ -115,7 +115,6 @@ async function translateMessageToEnglish(targetMessage) {
     const sourceLanguageIso = isoMap[sourceLanguage] || sourceLanguage;
     // pass to other functions
     return `:flag_${sourceLanguageIso}: -> **${translatedMessage}**`;
-    // return another message if the message was already in English
 }
 
 
