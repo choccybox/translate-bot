@@ -26,7 +26,6 @@ const allowedRoles =
 '1228329015580954664' /*danny*/,
 '1228386248725364798' /*customer*/,
 ];
-const allowedPerms = ['ADMINISTRATOR', 'MANAGE_MESSAGES'];
 const emojiReaction = [
     '<:catthumb:1235660903601541262>',
     '<:catthumb2:1235660901571624971>',
@@ -77,9 +76,8 @@ client.on('interactionCreate', async (interaction) => {
         // before running, check if user has atleast one of the mapped role ids or permissions
         const member = interaction.member;
         const hasRole = member.roles.cache.some(role => allowedRoles.includes(role.id));
-        const hasPerm = member.permissions.has(allowedPerms);
         // if one of the conditions is met, continue, otherwise end interaction
-        if (!hasRole && !hasPerm) {
+        if (!hasRole) {
             console.log('User does not have the required permissions.');
             interaction.reply({
                 content: 'You do not have the required permissions to use this command.',
