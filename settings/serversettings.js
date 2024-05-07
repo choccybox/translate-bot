@@ -78,7 +78,7 @@ module.exports = async function handleSlashCommand(interaction) {
                         .setCustomId('role-select')
                         .setPlaceholder('Select roles')
                         .setMinValues(1)
-                        .setMaxValues(roles.length)
+                        .setMaxValues(25)
                         .addOptions(roles);
 
                     // send the multi select menu
