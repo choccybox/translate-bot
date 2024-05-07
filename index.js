@@ -119,7 +119,6 @@ client.on('guildCreate', async (guild) => {
     fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2));
 });
 
-let errorMsg = 'oopsie woopsie, something went fucky wucky owo!'
 const allowedRoles = [
     '1203293769483685908' /*very active level 10*/, 
     '1203044476319440977' /*staff*/, 

@@ -8,6 +8,8 @@ const emojiReaction = [
     '<:catthumb4:1235660898408992818>',
 ]
 
+let errorMsg = 'oopsie woopsie, something went fucky wucky owo!'
+
 module.exports = async function handleContextMenuCommand(interaction) {
     if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'translate to all') {
         // before running, check if user has atleast one of the mapped role ids or permissions
