@@ -66,7 +66,7 @@ client.once('ready', async () => {
                 allowedTTA: [],
                 allowedBrainrot: [],
                 guildTranslateLanguage: 'en',
-                translateLanguageCorrectedForDiscord: 'us',
+                guildTranslateLanguageCorrectedForDiscord: 'us',
                 owner: guild.ownerId
             };
         }

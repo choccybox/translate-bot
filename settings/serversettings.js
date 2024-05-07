@@ -23,7 +23,7 @@ module.exports = async function handleSlashCommand(interaction) {
     'server translate language: ' + ':flag_' + guildSettings[guildID].guildTranslateLanguageCorrectedForDiscord + ':';
 
     if (interaction.commandName === 'server') {
-        if (interaction.guild.ownerId === interaction.user.id) {
+        if (interaction.guild.ownerId === interaction.user.id || interaction.member.permissions.has('ADMINISTRATOR')) {
             // create a row of buttons
             const row = new ActionRowBuilder()
                 .addComponents(
