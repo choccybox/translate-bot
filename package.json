@@ -8,7 +8,7 @@
   "author": "",
   "license": "ISC",
   "keywords": [],
-  "description": "",
+  "description": "1. rename .env.example to .env and fill your tokens (only do this locally)\r 2. deploy somewhere (railway, ocean etc) and fill tokens there\r 3. profit",
   "dependencies": {
     "@discordjs/rest": "^2.2.0",
     "discord.js": "^14.14.1",
