@@ -16,10 +16,10 @@ module.exports = async function handleSlashCommand(interaction) {
     const embedTitle = 'server settings';
     const embedColor = 2829617;
     const firstMessage = 
-    '"translate to all" permitted roles: ' + (guildSettings[guildID].allowedTTA.length > 0 ? guildSettings[guildID].allowedTTA.map(role => '<@&' + role + '>').join('  ') : '**none**') +
+/*     '"translate to all" permitted roles: ' + (guildSettings[guildID].allowedTTA.length > 0 ? guildSettings[guildID].allowedTTA.map(role => '<@&' + role + '>').join('  ') : '**none**') +
     '\n\n' +
     '"translate to brainrot" permitted roles: ' + (guildSettings[guildID].allowedBrainrot.length > 0 ? guildSettings[guildID].allowedBrainrot.map(role => '<@&' + role + '>').join('  ') : '**none**') +
-    '\n\n' +
+    '\n\n' + */
     'server translate language: ' + ':flag_' + guildSettings[guildID].guildTranslateLanguageCorrectedForDiscord + ':';
 
     if (interaction.commandName === 'server') {
@@ -27,7 +27,7 @@ module.exports = async function handleSlashCommand(interaction) {
             // create a row of buttons
             const row = new ActionRowBuilder()
                 .addComponents(
-                    new ButtonBuilder()
+/*                     new ButtonBuilder()
                         .setCustomId('change-roles')
                         .setLabel('change "translate to all" permissions')
                         .setStyle(ButtonStyle.Secondary),
@@ -36,7 +36,7 @@ module.exports = async function handleSlashCommand(interaction) {
                         .setCustomId('change-brainrot')
                         .setLabel('change "brainrot translation" permissions')
                         .setStyle(ButtonStyle.Secondary),
-
+ */
                     new ButtonBuilder()
                         .setCustomId('change-server-language')
                         .setLabel('change server translate language')
@@ -291,15 +291,15 @@ module.exports = async function handleSlashCommand(interaction) {
                             embeds: [{
                                 title: embedTitle,
                                 description: 
-                                '"translate to all" permitted roles: ' + (guildSettings[guildID].allowedTTA.length > 0 ? guildSettings[guildID].allowedTTA.map(role => '<@&' + role + '>').join('  ') : '**none**') +
+/*                                 '"translate to all" permitted roles: ' + (guildSettings[guildID].allowedTTA.length > 0 ? guildSettings[guildID].allowedTTA.map(role => '<@&' + role + '>').join('  ') : '**none**') +
                                 '\n\n' +
                                 '"translate to brainrot" permitted roles: ' + (guildSettings[guildID].allowedBrainrot.length > 0 ? guildSettings[guildID].allowedBrainrot.map(role => '<@&' + role + '>').join('  ') : '**none**') +
-                                '\n\n' +
+                                '\n\n' + */
                                 'server translate language: ' + ':flag_' + guildSettings[guildID].guildTranslateLanguageCorrectedForDiscord + ':',
                                 color: embedColor,
                             }],
                             components: [new ActionRowBuilder().addComponents(
-                                new ButtonBuilder()
+/*                                 new ButtonBuilder()
                                     .setCustomId('change-roles')
                                     .setLabel('change "translate to all" permissions')
                                     .setStyle(ButtonStyle.Secondary),
@@ -307,7 +307,7 @@ module.exports = async function handleSlashCommand(interaction) {
                                 new ButtonBuilder()
                                     .setCustomId('change-brainrot')
                                     .setLabel('change "brainrot translation" permissions')
-                                    .setStyle(ButtonStyle.Secondary),
+                                    .setStyle(ButtonStyle.Secondary), */
 
                                 new ButtonBuilder()
                                     .setCustomId('change-server-language')
