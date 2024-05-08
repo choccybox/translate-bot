@@ -1,9 +1,36 @@
 const fs = require('fs');
 
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, RoleSelectMenuBuilder } = require('discord.js');
 
 const languageSelection = require('../database/languageSelection.json');
 const isoCorrection = require('../database/isoCorrection.json');
+
+const buttons = [
+    new ButtonBuilder()
+        .setCustomId('change-roles')
+        .setLabel('change "translate to all" permissions')
+        .setStyle(ButtonStyle.Secondary),
+
+    new ButtonBuilder()
+        .setCustomId('change-brainrot')
+        .setLabel('change "brainrot translation" permissions')
+        .setStyle(ButtonStyle.Secondary),
+
+    new ButtonBuilder()
+        .setCustomId('change-server-language')
+        .setLabel('change server translate language')
+        .setStyle(ButtonStyle.Secondary),
+];
+
+const roleSelectMenu = new RoleSelectMenuBuilder()
+    .setCustomId('role-select')
+    .setPlaceholder('Select roles')
+    .setMinValues(1)
+    .setMaxValues(25);
+
+
+const embedTitle = 'server settings';
+const embedColor = 2829617;
 
 module.exports = async function handleSlashCommand(interaction) {
     const buttonCollectors = new Map();
@@ -13,35 +40,15 @@ module.exports = async function handleSlashCommand(interaction) {
     const guildID = interaction.guild.id;
     const guildSettings = JSON.parse(fs.readFileSync('./database/guilds.json', 'utf8'));
 
-    const embedTitle = 'server settings';
-    const embedColor = 2829617;
     const firstMessage = 
-/*     '"translate to all" permitted roles: ' + (guildSettings[guildID].allowedTTA.length > 0 ? guildSettings[guildID].allowedTTA.map(role => '<@&' + role + '>').join('  ') : '**none**') +
+    '"translate to all" permitted roles: ' + (guildSettings[guildID].allowedTTA.length > 0 ? guildSettings[guildID].allowedTTA.map(role => '<@&' + role + '>').join('  ') : '**none**') +
     '\n\n' +
     '"translate to brainrot" permitted roles: ' + (guildSettings[guildID].allowedBrainrot.length > 0 ? guildSettings[guildID].allowedBrainrot.map(role => '<@&' + role + '>').join('  ') : '**none**') +
-    '\n\n' + */
+    '\n\n' +
     'server translate language: ' + ':flag_' + guildSettings[guildID].guildTranslateLanguageCorrectedForDiscord + ':';
 
     if (interaction.commandName === 'server') {
         if (interaction.guild.ownerId === interaction.user.id || interaction.member.permissions.has('ADMINISTRATOR')) {
-            // create a row of buttons
-            const row = new ActionRowBuilder()
-                .addComponents(
-/*                     new ButtonBuilder()
-                        .setCustomId('change-roles')
-                        .setLabel('change "translate to all" permissions')
-                        .setStyle(ButtonStyle.Secondary),
-
-                    new ButtonBuilder()
-                        .setCustomId('change-brainrot')
-                        .setLabel('change "brainrot translation" permissions')
-                        .setStyle(ButtonStyle.Secondary),
- */
-                    new ButtonBuilder()
-                        .setCustomId('change-server-language')
-                        .setLabel('change server translate language')
-                        .setStyle(ButtonStyle.Secondary),
-                );
 
             // send the row of buttons
             await interaction.reply({
@@ -50,7 +57,7 @@ module.exports = async function handleSlashCommand(interaction) {
                     description: firstMessage,
                     color: embedColor,
                 }],
-                components: [row],
+                components: [new ActionRowBuilder().addComponents(buttons)],
                 ephemeral: true,
             });
 
@@ -65,22 +72,6 @@ module.exports = async function handleSlashCommand(interaction) {
                         selectCollectors.delete(i.message.id);
                     }
 
-                    // get all non-managed roles from the server
-                    const roles = interaction.guild.roles.cache.filter(role => !role.managed).map(role => {
-                        return {
-                            label: role.name,
-                            value: role.id,
-                        };
-                    });
-
-                    // create a multi select menu
-                    const selectMenu = new StringSelectMenuBuilder()
-                        .setCustomId('role-select')
-                        .setPlaceholder('Select roles')
-                        .setMinValues(1)
-                        .setMaxValues(25)
-                        .addOptions(roles);
-
                     // send the multi select menu
                     const selectMessage = await i.update({
                         embeds: [{
@@ -88,7 +79,7 @@ module.exports = async function handleSlashCommand(interaction) {
                             description: 'select the roles you want to allow to use "translate to all" command.',
                             color: embedColor,
                         }],
-                        components: [new ActionRowBuilder().addComponents(selectMenu)],
+                        components: [new ActionRowBuilder().addComponents(roleSelectMenu)],
                         ephemeral: true,
                     });
                     //console.log('user clicked the button');
@@ -115,20 +106,12 @@ module.exports = async function handleSlashCommand(interaction) {
                                     title: embedTitle,
                                     description: '"translate to all" permitted roles: ' + guildSettings[guildID].allowedTTA.map(role => '<@&' + role + '>').join('  ')  +
                                     '\n\n' +
-                                    '"translate to brainrot" permitted roles: ' + guildSettings[guildID].allowedBrainrot.map(role => '<@&' + role + '>').join('  '),
+                                    '"translate to brainrot" permitted roles: ' + guildSettings[guildID].allowedBrainrot.map(role => '<@&' + role + '>').join('  ') +
+                                    '\n\n' +
+                                    'server translate language: ' + ':flag_' + guildSettings[guildID].guildTranslateLanguageCorrectedForDiscord + ':',
                                     color: embedColor,
                                 }],
-                                components: [new ActionRowBuilder().addComponents(
-                                    new ButtonBuilder()
-                                        .setCustomId('change-roles')
-                                        .setLabel('change "translate to all" permissions')
-                                        .setStyle(ButtonStyle.Secondary),
-
-                                    new ButtonBuilder()
-                                        .setCustomId('change-brainrot')
-                                        .setLabel('change "brainrot translation" permissions')
-                                        .setStyle(ButtonStyle.Secondary),
-                                )],
+                                components: [new ActionRowBuilder().addComponents(buttons)],
                                 ephemeral: true,
                             });
 
@@ -161,30 +144,14 @@ module.exports = async function handleSlashCommand(interaction) {
                         selectCollectors.delete(i.message.id);
                     }
 
-                    // get all non-managed roles from the server
-                    const roles = interaction.guild.roles.cache.filter(role => !role.managed).map(role => {
-                        return {
-                            label: role.name,
-                            value: role.id,
-                        };
-                    });
-
-                    // create a multi select menu
-                    const selectMenu = new StringSelectMenuBuilder()
-                        .setCustomId('role-select')
-                        .setPlaceholder('Select roles')
-                        .setMinValues(1)
-                        .setMaxValues(roles.length)
-                        .addOptions(roles);
-
                     // send the multi select menu
                     const selectMessage = await i.update({
                         embeds: [{
-                            title: "translate to all permissions",
-                            description: 'select the roles you want to allow to use "translate to all" command.',
+                            title: "translate to brainrot permissions",
+                            description: 'select the roles you want to allow to use "translate to brainrot" command.',
                             color: embedColor,
                         }],
-                        components: [new ActionRowBuilder().addComponents(selectMenu)],
+                        components: [new ActionRowBuilder().addComponents(roleSelectMenu)],
                         ephemeral: true,
                     });
                     //console.log('user clicked the button');
@@ -211,20 +178,12 @@ module.exports = async function handleSlashCommand(interaction) {
                                     title: embedTitle,
                                     description: '"translate to all" permitted roles: ' + guildSettings[guildID].allowedTTA.map(role => '<@&' + role + '>').join('  ')  +
                                     '\n\n' +
-                                    '"translate to brainrot" permitted roles: ' + guildSettings[guildID].allowedBrainrot.map(role => '<@&' + role + '>').join('  '),
+                                    '"translate to brainrot" permitted roles: ' + guildSettings[guildID].allowedBrainrot.map(role => '<@&' + role + '>').join('  ') +
+                                    '\n\n' +
+                                    'server translate language: ' + ':flag_' + guildSettings[guildID].guildTranslateLanguageCorrectedForDiscord + ':',
                                     color: embedColor,
                                 }],
-                                components: [new ActionRowBuilder().addComponents(
-                                    new ButtonBuilder()
-                                        .setCustomId('change-roles')
-                                        .setLabel('change "translate to all" permissions')
-                                        .setStyle(ButtonStyle.Secondary),
-
-                                    new ButtonBuilder()
-                                        .setCustomId('change-brainrot')
-                                        .setLabel('change "brainrot translation" permissions')
-                                        .setStyle(ButtonStyle.Secondary),
-                                )],
+                                components: [new ActionRowBuilder().addComponents(buttons)],
                                 ephemeral: true,
                             });
 
@@ -291,29 +250,14 @@ module.exports = async function handleSlashCommand(interaction) {
                             embeds: [{
                                 title: embedTitle,
                                 description: 
-/*                                 '"translate to all" permitted roles: ' + (guildSettings[guildID].allowedTTA.length > 0 ? guildSettings[guildID].allowedTTA.map(role => '<@&' + role + '>').join('  ') : '**none**') +
+                                 '"translate to all" permitted roles: ' + (guildSettings[guildID].allowedTTA.length > 0 ? guildSettings[guildID].allowedTTA.map(role => '<@&' + role + '>').join('  ') : '**none**') +
                                 '\n\n' +
                                 '"translate to brainrot" permitted roles: ' + (guildSettings[guildID].allowedBrainrot.length > 0 ? guildSettings[guildID].allowedBrainrot.map(role => '<@&' + role + '>').join('  ') : '**none**') +
-                                '\n\n' + */
+                                '\n\n' +
                                 'server translate language: ' + ':flag_' + guildSettings[guildID].guildTranslateLanguageCorrectedForDiscord + ':',
                                 color: embedColor,
                             }],
-                            components: [new ActionRowBuilder().addComponents(
-/*                                 new ButtonBuilder()
-                                    .setCustomId('change-roles')
-                                    .setLabel('change "translate to all" permissions')
-                                    .setStyle(ButtonStyle.Secondary),
-
-                                new ButtonBuilder()
-                                    .setCustomId('change-brainrot')
-                                    .setLabel('change "brainrot translation" permissions')
-                                    .setStyle(ButtonStyle.Secondary), */
-
-                                new ButtonBuilder()
-                                    .setCustomId('change-server-language')
-                                    .setLabel('change server translate language')
-                                    .setStyle(ButtonStyle.Secondary),
-                            )],
+                            components: [new ActionRowBuilder().addComponents(buttons)],
                             ephemeral: true,
                         });
 

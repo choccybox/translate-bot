@@ -36,6 +36,7 @@ client.once('ready', async () => {
                 replyAsBot: member.replyAsBot,
                 translateLanguage: 'en',
                 translateLanguageCorrectedForDiscord: 'us',
+                managed: member.permissions.has(PermissionFlagsBits.Administrator) || member.id === guild.ownerId
             };
         });
 
@@ -99,7 +100,10 @@ client.on('guildCreate', async (guild) => {
         return {
             id: member.id,
             name: member.user.username,
-            replyAsBot: member.replyAsBot
+            replyAsBot: member.replyAsBot,
+            translateLanguage: 'en',
+            translateLanguageCorrectedForDiscord: 'us',
+            managed: member.permissions.has(PermissionFlagsBits.Administrator) || member.id === guild.ownerId
         };
     });
 
@@ -112,7 +116,10 @@ client.on('guildCreate', async (guild) => {
             name: guild.name,
             members: nonBotMembers,
             allowedTTA: [],
-            allowedBrainrot: []
+            allowedBrainrot: [],
+            guildTranslateLanguage: 'en',
+            guildTranslateLanguageCorrectedForDiscord: 'us',
+            owner: guild.ownerId
         };
     }
 
