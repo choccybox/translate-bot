@@ -65,7 +65,7 @@ module.exports = async function handleSlashCommand(interaction) {
             const changeRolesButtonCollector = interaction.channel.createMessageComponentCollector({ filter: changeRolesButtonFilter, time: 15000 });
 
             changeRolesButtonCollector.on('collect', async (i) => {
-                    // remove the previous select collector if it exists
+                try {
                     const selectCollector = selectCollectors.get(i.message.id);
                     if (selectCollector) {
                         selectCollector.stop();
@@ -97,7 +97,7 @@ module.exports = async function handleSlashCommand(interaction) {
                             const selectedRoles = selectInteraction.values;
 
                             // update the server settings with the selected roles
-                            guildSettings[guildID].allowedTTA = selectedRoles;
+                            guildSettings[guildID].allowedTTA = [...new Set([...guildSettings[guildID].allowedTTA, ...selectedRoles])];
                             fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2));
 
                             // update the embed with the new roles
@@ -125,6 +125,11 @@ module.exports = async function handleSlashCommand(interaction) {
                     selectCollectors.set(selectMessage.id, newSelectCollector);
 
                 buttonCollectors.set(interaction.id, changeRolesButtonCollector);
+
+                } catch (error) {
+                    console.error('An error occurred during role selection:', error);
+                    await i.reply({ content: 'An error occurred while processing your request. Please try again later.', ephemeral: true });
+                }
             });
     
             buttonCollectors.set('change-replyasbot', changeRolesButtonCollector); 
@@ -137,6 +142,7 @@ module.exports = async function handleSlashCommand(interaction) {
     
             // reply with hi, thats it for now
             changeBrainrotButtonCollector.on('collect', async (i) => {
+                try {
                     // remove the previous select collector if it exists
                     const selectCollector = selectCollectors.get(i.message.id);
                     if (selectCollector) {
@@ -169,7 +175,8 @@ module.exports = async function handleSlashCommand(interaction) {
                             const selectedRoles = selectInteraction.values;
 
                             // update the server settings with the selected roles
-                            guildSettings[guildID].allowedBrainrot = selectedRoles;
+                            guildSettings[guildID].allowedBrainrot = [...new Set([...guildSettings[guildID].allowedTTA, ...selectedRoles])];
+
                             fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2));
 
                             // update the embed with the new roles
@@ -197,7 +204,11 @@ module.exports = async function handleSlashCommand(interaction) {
                     selectCollectors.set(selectMessage.id, newSelectCollector);
 
                 buttonCollectors.set(interaction.id, changeBrainrotButtonCollector);
-            });
+            } catch (error) {
+                console.error('An error occurred during role selection:', error);
+                await i.reply({ content: 'An error occurred while processing your request. Please try again later.', ephemeral: true });
+            }
+        });
 
             const changeServerLanguageButtonFilter = (i) => i.customId === 'change-server-language' && i.user.id === interaction.user.id;
             const changeServerLanguageButtonCollector = interaction.channel.createMessageComponentCollector({ filter: changeServerLanguageButtonFilter, time: 15000 });
