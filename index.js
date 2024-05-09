@@ -1,8 +1,6 @@
-const { Client, GatewayIntentBits, PermissionsBitField, PermissionFlagsBits } = require('discord.js');
+const { Client, GatewayIntentBits, ContextMenuCommandBuilder, SlashCommandBuilder, ApplicationCommandType, REST, Routes, PermissionFlagsBits } = require('discord.js');
 require('dotenv').config();
 const fs = require('fs');
-
-const registerCommands = require('./registerCommands.js');
 
 const translateContext = require('./context commands/translate.js');
 
@@ -25,6 +23,8 @@ const client = new Client({
 });
 
 client.once('ready', async () => {
+    // Register commands
+    await registerCommands();
     console.log(`wake yo ass up bc it's time to go beast mode`);
   
     const guildData = {};
@@ -86,7 +86,6 @@ client.once('ready', async () => {
       }
     }
 });
-
 
 client.on('guildCreate', async (guild) => {
     console.log(`Joined a new guild: ${guild.name}`);
@@ -155,61 +154,108 @@ client.on('interactionCreate', async (interaction) => {
     } 
 });
 
-// translate to all
-/* client.on('interactionCreate', async (interaction) => {
-    if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'translate to all') {
-        // before running, check if user has atleast one of the mapped role ids or permissions
-        const member = interaction.member;
-        const hasRole = member.roles.cache.some(role => allowedRoles.includes(role.id));
-        // if one of the conditions is met, continue, otherwise end interaction
-        if (!hasRole) {
-            console.log('User does not have the required permissions.');
-            interaction.reply({
-                content: 'You do not have the required permissions to use this command.',
-                ephemeral: true,
-            });
-            return;
-        } else {
-            console.log('User has the required permissions.');
+const commandsData = [
+    new ContextMenuCommandBuilder()
+    .setName('translate')
+    .setType(ApplicationCommandType.Message),
+
+    new SlashCommandBuilder()
+    .setName('server')
+    .setDescription('modify server settings'),
+
+    new SlashCommandBuilder()
+    .setName('user')
+    .setDescription('modify user settings'),
+
+    new SlashCommandBuilder()
+    .setName('freaky')
+    .setDescription('make text 𝓯𝓻𝓮𝓪𝓴𝔂👅💦')
+    .addStringOption(option => option.setName('text').setDescription('text to make 𝓯𝓻𝓮𝓪𝓴𝔂👅💦').setRequired(true))
+    .addBooleanOption(option => option.setName('disable-emojis').setDescription('disable 👅💦 emojis').setRequired(false)),
+
+    new SlashCommandBuilder()
+    .setName('translate')
+    .setDescription('translate a message to a specific language')
+    .addStringOption(option => option.setName('text').setDescription('text to translate').setRequired(true))
+    .addStringOption(option => option.setName('language').setDescription('language to translate to').setRequired(true)
+        .addChoices(
+            {name: 'english', value: 'en', "emoji": "🇺🇸"},
+            {name: 'german', value: 'de'},
+            {name: 'french', value: 'fr'},
+            {name: 'spanish', value: 'es'},
+            {name: 'italian', value: 'it'},
+            {name: 'dutch', value: 'nl'},
+            {name: 'russian', value: 'ru'},
+            {name: 'japanese', value: 'ja'},
+            {name: 'chinese', value: 'zh'},
+            {name: 'korean', value: 'ko'},
+            {name: 'arabic', value: 'ar'},
+            {name: 'turkish', value: 'tr'},
+            {name: 'romanian', value: 'ro'},
+            {name: 'polish', value: 'pl'},
+            {name: 'norwegian', value: 'no'},
+            {name: 'swedish', value: 'sv'},
+            {name: 'danish', value: 'da'},
+            {name: 'finnish', value: 'fi'},
+            {name: 'greek', value: 'el'},
+            {name: 'hungarian', value: 'hu'},
+            {name: 'czech', value: 'cs'},
+            {name: 'slovak', value: 'sk'},
+            {name: 'croatian', value: 'hr'},
+            {name: 'serbian', value: 'sr'},
+            {name: 'slovenian', value: 'sl'}
+        )
+    ),
+];
+
+const rest = new REST().setToken(process.env.TOKEN);
+
+async function registerCommands() {
+    try {
+        console.log('Started refreshing application commands.');
+
+        // Get existing commands from the server
+        const existingCommands = await rest.get(
+            Routes.applicationCommands(process.env.CLIENT_ID),
+        );
+
+        // Remove commands that are not present in commandsData
+        const commandsToRemove = existingCommands.filter(command => {
+            return !commandsData.some(newCommand => newCommand.name === command.name);
+        });
+
+        if (commandsToRemove.length > 0) {
+            await Promise.all(commandsToRemove.map(command => {
+                return rest.delete(
+                    Routes.applicationCommand(process.env.CLIENT_ID, command.id),
+                );
+            }));
+
+            console.log('Successfully removed commands:', commandsToRemove.map(command => command.name));
         }
 
-        const targetMessage = interaction.targetMessage;
-        const targetContent = targetMessage.content;
+        const registeredCommands = await rest.put(
+            Routes.applicationCommands(process.env.CLIENT_ID),
+            { body: commandsData },
+        );
 
-        translateMessageToEnglish(targetContent)
-            .then((translatedMessage) => {
-                if (translatedMessage === targetContent) {
-                    console.log(`This message is already in English. -> ${targetContent}`);
-                    interaction.reply({
-                        content: 'This message is already in English.',
-                        ephemeral: true,
-                    });
-                    return;
-                } else {
-                    console.log(`Original message: ${targetContent}`);
-                    console.log(`Translated message: ${translatedMessage}`);
-                    // reply with translation without mentioning the user
-                    targetMessage.reply({
-                        content: translatedMessage,
-                        allowedMentions: { repliedUser: false },
-                    });
+        // Log the added commands
+        console.log('Added commands:');
+        registeredCommands.forEach(command => {
+            console.log(`Command Name: ${command.name} | Command ID: ${command.id} | Command Type: ${command.type}`);
+        });
 
-                    // end interaction
-                    interaction.reply({
-                        // randomly select an emoji from the array
-                        content: `${emojiReaction[Math.floor(Math.random() * emojiReaction.length)]}`,
-                        ephemeral: true,
-                    });
-                }
-            })
-            .catch((error) => {
-                console.error(error);
-                interaction.reply({
-                    content: errorMsg,
-                    ephemeral: true,
-                });
-            });
+        // Register commands to all guilds and console log the guilds
+        const guilds = client.guilds.cache;
+        await Promise.all(guilds.map(async guild => {
+            await guild.commands.set(commandsData);
+            console.log(`Registered commands to guild: ${guild.name}`);
+        }));
+
+        console.log('Successfully reloaded context and slash commands.');
+    } catch (error) {
+        console.error('Error refreshing application commands:', error);
     }
-}); */
+}
 
 client.login(process.env.TOKEN);
