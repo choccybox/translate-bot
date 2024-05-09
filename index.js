@@ -2,11 +2,15 @@ const { Client, GatewayIntentBits, PermissionsBitField, PermissionFlagsBits } = 
 require('dotenv').config();
 const fs = require('fs');
 
-const registerCommands = require('./bot/registerCommands.js');
-const translateToYou = require('./commands/translatetoyou.js');
-const translateToAll = require('./commands/translatetoall.js');
-const serverSettings = require('./settings/serversettings.js');
-const userSettings = require('./settings/usersettings.js');
+const registerCommands = require('./registerCommands.js');
+
+const translateContext = require('./context commands/translate.js');
+
+const translateSlash = require('./slash commands/translate.js');
+const freakySlash = require('./slash commands/freaky.js');
+
+const serverSlash = require('./settings/serversettings.js');
+const userSlash = require('./settings/usersettings.js');
 
 const client = new Client({
   intents: [
@@ -22,81 +26,76 @@ const client = new Client({
 
 client.once('ready', async () => {
     console.log(`wake yo ass up bc it's time to go beast mode`);
-
+  
     const guildData = {};
-
+  
     client.guilds.cache.forEach(guild => {
-        const guildId = guild.id;
-        const guildName = guild.name;
-        const adminAndOwnerMembers = guild.members.cache.filter(member => !member.user.bot && (member.id === guild.ownerId || member.permissions.has(PermissionFlagsBits.Administrator))).map(member => {
-            member.replyAsBot = true; // Set replyAsBot to true for each member
-            return {
-                id: member.id,
-                name: member.user.username,
-                replyAsBot: member.replyAsBot,
-                translateLanguage: 'en',
-                translateLanguageCorrectedForDiscord: 'us',
-                managed: member.permissions.has(PermissionFlagsBits.Administrator) || member.id === guild.ownerId
-            };
-        });
+      const guildId = guild.id;
+      const guildName = guild.name;
+  
+      const adminAndOwnerMembers = guild.members.cache.filter(member => !member.user.bot && (member.id === guild.ownerId || member.permissions.has(PermissionFlagsBits.Administrator))).map(member => {
+        member.replyAsBot = false; // Set replyAsBot to true for each member
+        return {
+          id: member.id,
+          name: member.user.username,
+          replyAsBot: member.replyAsBot,
+          translateLanguage: 'en',
+          translateLanguageCorrectedForDiscord: 'us',
+          managed: member.permissions.has(PermissionFlagsBits.Administrator) || member.id === guild.ownerId
+        };
+      });
 
-        let guildSettings = {};
-        try {
-            guildSettings = JSON.parse(fs.readFileSync('./database/guilds.json', 'utf8'));
-        } catch (error) {
-            if (error.code !== 'ENOENT') {
-                console.error('Error reading guilds.json:', error.message);
-            }
-        }
-        
-        const existingSettings = guildSettings[guildId];
+      // Initialize guild settings
+      guildData[guildId] = {
+        name: guildName,
+        members: {},
+        allowedSTA: [],
+        allowedBrainrot: [],
+        guildTranslateLanguage: 'en',
+        guildTranslateLanguageCorrectedForDiscord: 'us',
+        owner: guild.ownerId
+      };
 
-        if (existingSettings) {
-            // Merge the existing settings with the new settings
-            const updatedSettings = {
-                ...existingSettings,
-                members: adminAndOwnerMembers,
-                name: guildName
-            };
-
-            guildData[guildId] = updatedSettings;
-        } else {
-            guildData[guildId] = {
-                name: guildName,
-                members: adminAndOwnerMembers,
-                allowedTTA: [],
-                allowedBrainrot: [],
-                guildTranslateLanguage: 'en',
-                guildTranslateLanguageCorrectedForDiscord: 'us',
-                owner: guild.ownerId
-            };
-        }
+      // Populate members under the guild
+      adminAndOwnerMembers.forEach(member => {
+        guildData[guildId].members[member.id] = {
+          name: member.name,
+          replyAsBot: member.replyAsBot,
+          translateLanguage: member.translateLanguage,
+          translateLanguageCorrectedForDiscord: member.translateLanguageCorrectedForDiscord,
+          managed: member.managed
+        };
+      });
     });
 
-    fs.writeFileSync('./database/guilds.json', JSON.stringify(guildData, null, 2));
+    try {
+      const existingGuildData = JSON.parse(fs.readFileSync('./database/guilds.json', 'utf8'));
+      
+      // Merge existing guild data with new data, prioritizing existing data
+      for (const guildId in guildData) {
+        if (existingGuildData[guildId]) {
+          // Merge members data
+          Object.assign(guildData[guildId].members, existingGuildData[guildId].members);
+        }
+      }
+      
+      fs.writeFileSync('./database/guilds.json', JSON.stringify(guildData, null, 2));
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        console.error('Error reading or writing guilds.json:', error.message);
+      }
+    }
 });
+
 
 client.on('guildCreate', async (guild) => {
     console.log(`Joined a new guild: ${guild.name}`);
     const guildId = guild.id;
     const guildSettings = JSON.parse(fs.readFileSync('./database/guilds.json', 'utf8'));
 
-    if (!guildSettings[guildId]) {
-        guildSettings[guildId] = {
-            name: guild.name,
-            members: adminAndOwnerMembers,
-            allowedTTA: [],
-            allowedBrainrot: [],
-            guildTranslateLanguage: 'en',
-            guildTranslateLangCorrectedForDiscord: 'us'
-        };
-
-        fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2));
-    }
-
-    // Add the code here to write the guild data as when the bot starts
+    // Populate non-bot members
     const nonBotMembers = guild.members.cache.filter(member => !member.user.bot).map(member => {
-        member.replyAsBot = true; // Set replyAsBot to true for each member
+        member.replyAsBot = false; // Set replyAsBot to true for each member
         return {
             id: member.id,
             name: member.user.username,
@@ -107,46 +106,53 @@ client.on('guildCreate', async (guild) => {
         };
     });
 
+    // Check if guild settings already exist and contain relevant data
     const existingSettings = guildSettings[guildId];
 
-    if (existingSettings && (existingSettings.allowedTTA.length > 0 || existingSettings.allowedBrainrot.length > 0 || nonBotMembers.some(member => member.replyAsBot))) {
-        guildSettings[guildId] = existingSettings;
+    if (existingSettings && (existingSettings.allowedSTA.length > 0 || existingSettings.allowedBrainrot.length > 0 || Object.keys(existingSettings.members).length > 0)) {
+        // Skip writing the guild settings if they already exist and contain relevant data
     } else {
+        // Write guild settings if they don't exist or are incomplete
         guildSettings[guildId] = {
             name: guild.name,
-            members: nonBotMembers,
-            allowedTTA: [],
+            members: {},
+            allowedSTA: [],
             allowedBrainrot: [],
             guildTranslateLanguage: 'en',
             guildTranslateLanguageCorrectedForDiscord: 'us',
             owner: guild.ownerId
         };
+
+        // Populate members under the guild
+        nonBotMembers.forEach(member => {
+            guildSettings[guildId].members[member.id] = {
+                name: member.name,
+                replyAsBot: member.replyAsBot,
+                translateLanguage: member.translateLanguage,
+                translateLanguageCorrectedForDiscord: member.translateLanguageCorrectedForDiscord,
+                managed: member.managed
+            };
+        });
     }
 
     fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2));
 });
 
-const allowedRoles = [
-    '1203293769483685908' /*very active level 10*/, 
-    '1203044476319440977' /*staff*/, 
-    '1203057085432995890' /*managers*/, 
-    '1208815004963315772' /*boosters*/,
-    '1228329015580954664' /*danny*/,
-    '1228386248725364798' /*customer*/,
-];
-
 client.on('interactionCreate', async (interaction) => {
     // get what context menu reaction it was and use the appropriate function
-    if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'translate to you') {
-        await translateToYou(interaction);
-    } else if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'translate to all') {
-        await translateToAll(interaction);
+    if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'translate') {
+        await translateContext(interaction);
     } else if (interaction.isCommand() && interaction.commandName === 'server') {
-        await serverSettings(interaction);
+        await serverSlash(interaction);
     } else if (interaction.isCommand() && interaction.commandName === 'user') {
-        await userSettings(interaction)
-    }
-    
+        await userSlash(interaction)
+    } else if (interaction.isCommand() && interaction.commandName === 'freaky') {
+        await freakySlash(interaction);
+    } else if (interaction.isCommand() && interaction.commandName === 'translate') {
+        await translateSlash(interaction);
+    } else {
+        console.log('interaction not recognized');
+    } 
 });
 
 // translate to all
@@ -205,6 +211,5 @@ client.on('interactionCreate', async (interaction) => {
             });
     }
 }); */
-
 
 client.login(process.env.TOKEN);

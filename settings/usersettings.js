@@ -13,20 +13,20 @@ module.exports = async function handleSlashCommand(interaction) {
     const userSettings = JSON.parse(fs.readFileSync('./database/guilds.json', 'utf8'));
 
     // check if user id is in the guild
-    if (!userSettings[interaction.guild.id].members.some((member) => member.id === userID)) {
-        userSettings[interaction.guild.id].members.push({
-            id: userID,
+    const guildID = interaction.guild.id;
+    if (!userSettings[guildID].members[userID]) {
+        userSettings[guildID].members[userID] = {
             name: interaction.user.username,
-            replyAsBot: true,
+            replyAsBot: false,
             translateLanguage: 'en',
-            translateLanguageCorrectedForDiscord: 'us'
-        });
+            translateLanguageCorrectedForDiscord: 'us',
+            managed: interaction.member.permissions.has('Administrator') || userID === interaction.guild.ownerId
+        };
         fs.writeFileSync('./database/guilds.json', JSON.stringify(userSettings, null, 4), 'utf8');
     }
 
-    const guildID = interaction.guild.id;
     const members = userSettings[guildID].members;
-    const user = members.find((member) => member.id === userID);
+    const user = members[userID];
 
     const embedTitle = 'user settings for **@' + interaction.user.username + '**';
     const embedColor = 2829617;
@@ -68,7 +68,6 @@ module.exports = async function handleSlashCommand(interaction) {
         replyAsBotButtonCollector.on('collect', async (i) => {
             try {
                 user.replyAsBot = !user.replyAsBot;
-                userSettings[guildID].members = members;
                 fs.writeFileSync('./database/guilds.json', JSON.stringify(userSettings, null, 4), 'utf8');
         
                 await i.update({
@@ -131,7 +130,6 @@ module.exports = async function handleSlashCommand(interaction) {
 
                 user.translateLanguage = selectedLanguage;
                 user.translateLanguageCorrectedForDiscord = correctedLanguage;
-                userSettings[guildID].members = members;
                 fs.writeFileSync('./database/guilds.json', JSON.stringify(userSettings, null, 4), 'utf8');
 
                 await selectInteraction.update({

@@ -20,7 +20,7 @@ async function translateMessageToEnglish(targetMessage, interaction, userLang) {
         userMentions.forEach(mention => {
             const userId = mention.match(/\d+/)[0];
             const userName = users.get(userId).displayName;
-            targetMessage = targetMessage.replace(mention, userName);
+            targetMessage = targetMessage.replace(mention, `**${userName}**`);
         });
         console.log(`**MENTIONS** message from ${interaction.guild.name.toUpperCase()}: ${targetMessage}`)
     } else {
@@ -44,9 +44,9 @@ async function translateMessageToEnglish(targetMessage, interaction, userLang) {
     const userLangIso = isoCorrection[userLang] || userLang;
 
     // console log what the auto language detection is
-    console.log(`Detected language: ${sourceLanguageIso}`);
-    console.log(`User's preferred language: ${userLangIso}`);
-    console.log(`:flag_${sourceLanguageIso}: -> :flag_${userLangIso}: ${translatedMessage}`);
+    //console.log(`Detected language: ${sourceLanguageIso}`);
+    //console.log(`User's preferred language: ${userLangIso}`);
+    //console.log(`:flag_${sourceLanguageIso}: -> :flag_${userLangIso}: ${translatedMessage}`);
 
     // if the detected and preferred languages are the same, return the original message
     if (sourceLanguageIso === userLangIso) {
