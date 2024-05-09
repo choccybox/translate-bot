@@ -219,11 +219,12 @@ async function registerCommands() {
             Routes.applicationCommands(process.env.CLIENT_ID),
         );
 
-        // Remove commands that are not present in commandsData
+        // Filter out commands that are not present in commandsData
         const commandsToRemove = existingCommands.filter(command => {
             return !commandsData.some(newCommand => newCommand.name === command.name);
         });
 
+        // Remove commands that are not present in commandsData
         if (commandsToRemove.length > 0) {
             await Promise.all(commandsToRemove.map(command => {
                 return rest.delete(
@@ -234,6 +235,7 @@ async function registerCommands() {
             console.log('Successfully removed commands:', commandsToRemove.map(command => command.name));
         }
 
+        // Register new commands
         const registeredCommands = await rest.put(
             Routes.applicationCommands(process.env.CLIENT_ID),
             { body: commandsData },
@@ -248,6 +250,14 @@ async function registerCommands() {
         // Register commands to all guilds and console log the guilds
         const guilds = client.guilds.cache;
         await Promise.all(guilds.map(async guild => {
+            const existingGuildCommands = await guild.commands.fetch();
+            const commandsToRemoveInGuild = existingGuildCommands.filter(command => {
+                return !commandsData.some(newCommand => newCommand.name === command.name);
+            });
+            if (commandsToRemoveInGuild.size > 0) {
+                await Promise.all(commandsToRemoveInGuild.map(command => command.delete()));
+                console.log(`Removed commands from guild '${guild.name}':`, commandsToRemoveInGuild.map(command => command.name));
+            }
             await guild.commands.set(commandsData);
             console.log(`Registered commands to guild: ${guild.name}`);
         }));
