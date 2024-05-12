@@ -184,17 +184,9 @@ module.exports = async function handleSlashCommand(interaction) {
                     return resultArray;
                 }, []);
 
-                // create a select menus with language options
-                const selectMenus = languageSelectionChunks.map((chunk, index) => {
-                    return new StringSelectMenuBuilder()
-                        .setCustomId(`language-select-${index}`)
-                        .setPlaceholder('Select language')
-                        .addOptions(chunk);
-                });
-
-
-                // log how many select menus were created and how many entries are in total
-                //console.log(`Created ${selectMenus.length} select menus with a total of ${languageSelection.length} entries`);
+                if (process.env.DISABLE_DEBUG === 'false') {
+                    console.log(`Created ${selectMenus.length} select menus with a total of ${languageSelection.length} entries`);
+                }
 
                 // create a select menu with language options
                 const selectMenu = new StringSelectMenuBuilder()

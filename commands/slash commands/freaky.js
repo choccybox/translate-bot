@@ -83,7 +83,7 @@ module.exports = async function handleSlashCommand(interaction) {
                 await webhook.delete();
 
                 await i.update({
-                    content: emojiReaction[Math.floor(Math.random() * emojiReaction.length)],
+                    content: 'done! :3',
                     components: [],
                 });
             } else {
