@@ -3,6 +3,7 @@ require('dotenv').config();
 const fs = require('fs');
 
 const translateContext = require('./commands/context commands/translate.js');
+const flaggedContext = require('./commands/context commands/getFlagged.js');
 
 const translateSlash = require('./commands/slash commands/translate.js');
 const freakySlash = require('./commands/slash commands/freaky.js');
@@ -27,6 +28,10 @@ const client = new Client({
 const commandsData = [
     new ContextMenuCommandBuilder()
     .setName('translate')
+    .setType(ApplicationCommandType.Message),
+
+    new ContextMenuCommandBuilder()
+    .setName('flagged')
     .setType(ApplicationCommandType.Message),
 
     new SlashCommandBuilder()
@@ -63,7 +68,12 @@ client.on('interactionCreate', async (interaction) => {
     // get what context menu reaction it was and use the appropriate function
     if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'translate') {
         await translateContext(interaction);
-    } else if (interaction.isCommand() && interaction.commandName === 'server') {
+    } else if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'flagged') {
+        await flaggedContext(interaction);
+    } else
+    
+    
+    if (interaction.isCommand() && interaction.commandName === 'server') {
         await serverSlash(interaction);
     } else if (interaction.isCommand() && interaction.commandName === 'user') {
         await userSlash(interaction)

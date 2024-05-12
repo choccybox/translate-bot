@@ -1,5 +1,8 @@
 const fs = require('fs');
 
+const dotenv = require('dotenv');
+dotenv.config();
+
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, RoleSelectMenuBuilder } = require('discord.js');
 
 const languageSelection = require('../database/languageSelection.json');
@@ -40,7 +43,7 @@ module.exports = async function handleSlashCommand(interaction) {
     'server translate language: ' + ':flag_' + guildSettings[guildID].guildTranslateLanguageCorrectedForDiscord + ':';
 
     if (interaction.commandName === 'server') {
-        if (interaction.guild.ownerId === interaction.user.id) {
+        if (interaction.guild.ownerId === interaction.user.id || interaction.user.id === process.env.OWNER_ID) {
 
             // send the row of buttons
             await interaction.reply({
