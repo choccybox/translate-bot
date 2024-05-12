@@ -1,4 +1,4 @@
-const translateMessageToEnglish = require('../backbone/texttranslateworker.js'); // Assuming you have the translation function in a separate file called translate.js
+const translateMessageToEnglish = require('../../backbone/texttranslateworker.js'); // Assuming you have the translation function in a separate file called translate.js
 const fs = require('fs');
 
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, RoleSelectMenuBuilder } = require('discord.js');
@@ -6,7 +6,7 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, R
 const buttons = [
     new ButtonBuilder()
         .setCustomId('confirm-translateall')
-        .setLabel('send to all?')
+        .setLabel('send to this channel')
         .setStyle(ButtonStyle.Danger),
 ];
 
@@ -29,75 +29,65 @@ module.exports = async function handleContextMenuCommand(interaction) {
         // read server.json file
         const guildSettings = JSON.parse(fs.readFileSync('./database/guilds.json', 'utf8'));
         const allowedSTA = guildSettings[guildID].allowedSTA;
-        const isAdmin = member.permissions.has('ADMINISTRATOR');
+        const isAdmin = member.permissions.has('Administrator');
 
         // check if user has atleast one of the allowed roles
         const hasRole = member.roles.cache.some(role => allowedSTA.includes(role.id) || isAdmin);
-        // if one of the conditions is met, continue, otherwise end interaction
-        if (!hasRole) {
-            console.log(`user ${member.user.username} does not have permissions.`);
-            interaction.reply({
-                content: 'You do not have the required permissions or roles to use this command.',
-                ephemeral: true,
-            });
-            return;
-        } else {
-            console.log(`user ${member.user.username} has the required permissions.`);
-        }
 
         const targetMessage = interaction.targetMessage;
         const targetContent = targetMessage.content;
         const guildTranslateLang = guildSettings[guildID].guildTranslateLanguage;
-        console.log(`guild translate language: ${guildTranslateLang}`);
+        // console.log(`guild translate language: ${guildTranslateLang}`);
+
+        const hasAttachment = targetMessage.attachments.size > 0;
+        // get attachment url
+        const attachmentURL = targetMessage.attachments.map((attachment) => attachment.url);
 
         translateMessageToEnglish(targetContent, interaction, guildTranslateLang)
         .then((translatedMessage) => {
+            // get the :flag_xx: emoji from the translated language
+            const flagEmoji = translatedMessage.match(/:flag_\w+:/g);
             if (translatedMessage.includes('this message is already in')) {
                 interaction.reply({
-                    content: translatedMessage,
+                    content: 'this message is already in servers preffered language: ' + flagEmoji,
                     ephemeral: true,
                 });
                 return;
-            } else if (hasRole){
+            } else {
                 interaction.reply({
                     content: translatedMessage,
                     ephemeral: true,
-                    components: [new ActionRowBuilder().addComponents(buttons)],
+                    files: hasAttachment ? attachmentURL : null,
+                    components: hasRole ? [new ActionRowBuilder().addComponents(buttons)] : [],
                 });
+            } 
+            
+            // store the message id, not the interaction id
+            storedMessageID = targetMessage.id;
+            console.log(`stored message id: ${storedMessageID}`);
 
-                // store the message id, not the interaction id
-                storedMessageID = targetMessage.id;
-                console.log(`stored message id: ${storedMessageID}`);
+            const sendTranslationToAllButtonFilter = (i) => i.customId === 'confirm-translateall' && i.user.id === interaction.user.id;
+            const sendTranslationToAllCollector = interaction.channel.createMessageComponentCollector({ filter: sendTranslationToAllButtonFilter, time: 15000 });
 
-                const sendTranslationToAllButtonFilter = (i) => i.customId === 'confirm-translateall' && i.user.id === interaction.user.id;
-                const sendTranslationToAllCollector = interaction.channel.createMessageComponentCollector({ filter: sendTranslationToAllButtonFilter, time: 15000 });
-
-                sendTranslationToAllCollector.on('collect', async (i) => {
-                    // Send translated message to the channel
+            sendTranslationToAllCollector.on('collect', async (i) => {
                     await interaction.channel.send({
                         content: translatedMessage,
                         allowedMentions: { repliedUser: false },
                         reply: { messageReference: storedMessageID },
+                        files: hasAttachment ? attachmentURL : null,
                     });
 
                     // Update the interaction message
                     await i.update({
-                        content: emojiReaction[Math.floor(Math.random() * emojiReaction.length)],
+                        content: 'done! :3',
                         components: [],
                     });
                 });
-            } else {
-                interaction.reply({
-                    content: errorMsg,
-                    ephemeral: true,
-                });
-            
-            }
         })
         .catch((error) => {
             console.error(error);
             interaction.reply({
-                content: translatedMessage,
+                content: errorMsg,
                 ephemeral: true,
             });
         });

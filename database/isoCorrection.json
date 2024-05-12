@@ -1,7 +1,10 @@
 {
     "cs" : "cz",
     "zh" : "cn",
+    "zh-CN" : "cn",
     "ja" : "jp",
     "en" : "us",
-    "ko" : "kr"
+    "ko" : "kr",
+    "ar" : "ae",
+    "hi" : "in"
 }

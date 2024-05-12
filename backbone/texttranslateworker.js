@@ -2,6 +2,9 @@ import('node-fetch').then((fetch) => {
     global.fetch = fetch.default;
 });
 
+const dotenv = require('dotenv');
+dotenv.config();
+
 const isoCorrection = require('../database/isoCorrection.json');
 
 async function translateMessageToEnglish(targetMessage, interaction, userLang) {
@@ -22,31 +25,40 @@ async function translateMessageToEnglish(targetMessage, interaction, userLang) {
             const userName = users.get(userId).displayName;
             targetMessage = targetMessage.replace(mention, `**${userName}**`);
         });
-        console.log(`**MENTIONS** message from ${interaction.guild.name.toUpperCase()}: ${targetMessage}`)
+        //console.log(`**MENTIONS** message from ${interaction.guild.name.toUpperCase()}: ${targetMessage}`)
     } else {
-        console.log(`message from ${interaction.guild.name.toUpperCase()}: ${targetMessage}`);
+        //console.log(`message from ${interaction.guild.name.toUpperCase()}: ${targetMessage}`);
     }
 
+/*     // ignore commas and periods
+    targetMessage = targetMessage.replace(/[,\.]/g, '');
+
+    console.log(`target message: ${targetMessage}`); */
+
+
     // Fetch translation from Google Translate API
-    const response = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${userLang}&dt=t&q=${encodeURIComponent(targetMessage)}`);
+    const response = await fetch(`https://api.datpmt.com/api/v1/dictionary/translate?string=${encodeURIComponent(targetMessage)}&from_lang=${sourceLang}&to_lang=${userLang}`);
     const data = await response.json();
-    const translatedMessage = data[0][0][0]; // Extract translated text from the response */
+    const translatedMessage = data;
 
-/*     // ignore disabled languages and return the original message
-    if (disabledLanguages.includes(data[2])) {
-        return targetMessage;
-    } */
+    const targetMessageLang = await fetch(`https://api.datpmt.com/api/v1/dictionary/detection?string=${encodeURIComponent(targetMessage)}`);
+    const targetMessageLangData = await targetMessageLang.json();
+    const targetMessageLangCode = targetMessageLangData[0];
 
-    // get what language the message was translated from
-    const sourceLanguage = data[2];
+    console.log(`target message language code: ${targetMessageLangCode}`);
+
+    console.log(`translated message: ${translatedMessage}`);
+
     // replace certain iso codes (cs -> cz, zh -> zh-CN, etc) using a map
-    const sourceLanguageIso = isoCorrection[sourceLanguage] || sourceLanguage;
+    const sourceLanguageIso = isoCorrection[targetMessageLangCode] || targetMessageLangCode;
     const userLangIso = isoCorrection[userLang] || userLang;
+    const selectedLanguage = isoCorrection[userLang] || userLang;
 
-    // console log what the auto language detection is
-    //console.log(`Detected language: ${sourceLanguageIso}`);
-    //console.log(`User's preferred language: ${userLangIso}`);
-    //console.log(`:flag_${sourceLanguageIso}: -> :flag_${userLangIso}: ${translatedMessage}`);
+    if (process.env.DISABLE_DEBUG === 'false') {
+        console.log(`Detected language: ${sourceLanguageIso}`);
+        console.log(`User's preferred language: ${userLangIso}`);
+        console.log(`:flag_${sourceLanguageIso}: -> :flag_${userLangIso}: ${translatedMessage}`);
+    }
 
     // if the detected and preferred languages are the same, return the original message
     if (sourceLanguageIso === userLangIso) {

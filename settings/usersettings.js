@@ -27,6 +27,14 @@ module.exports = async function handleSlashCommand(interaction) {
 
     const members = userSettings[guildID].members;
     const user = members[userID];
+    const member = interaction.member;
+    const guildSettings = userSettings[guildID];
+    const allowedSTA = guildSettings.allowedSTA;
+    const roles = member.roles.cache;
+    // check if one of user's roles is in allowedSTA or is admin
+    const hasSTARole = roles.some(role => allowedSTA.includes(role.id) || member.permissions.has('Administrator'));
+    const hasSTARoleRenamed = hasSTARole ? '**yes**' : '**no**';
+    
 
     const embedTitle = 'user settings for **@' + interaction.user.username + '**';
     const embedColor = 2829617;
@@ -35,7 +43,9 @@ module.exports = async function handleSlashCommand(interaction) {
         (user.replyAsBot ? '**yes**' : '**no**') +
         '\n\n' +
         'translation language: ' +
-        ':flag_' + user.translateLanguageCorrectedForDiscord + ':';
+        ':flag_' + user.translateLanguageCorrectedForDiscord + ':' +
+        '\n\n' +
+        'can translate for all?: ' + hasSTARoleRenamed;
 
     if (interaction.commandName === 'user') {
         const row = new ActionRowBuilder().addComponents(
@@ -79,7 +89,9 @@ module.exports = async function handleSlashCommand(interaction) {
                                 (user.replyAsBot ? '**yes**' : '**no**') +
                                 '\n\n' +
                                 'translation language: ' +
-                                ':flag_' + user.translateLanguageCorrectedForDiscord + ':',
+                                ':flag_' + user.translateLanguageCorrectedForDiscord + ':' +
+                                '\n\n' +
+                                'can translate for all?: ' + hasSTARoleRenamed,
                             color: embedColor
                         }
                     ],
@@ -141,7 +153,9 @@ module.exports = async function handleSlashCommand(interaction) {
                                 (user.replyAsBot ? '**yes**' : '**no**') +
                                 '\n\n' +
                                 'translation language: ' +
-                                ':flag_' + correctedLanguage + ':',
+                                ':flag_' + correctedLanguage + ':' +
+                                '\n\n' +
+                                'can translate for all?: ' + hasSTARoleRenamed,
                             color: embedColor
                         }
                     ],

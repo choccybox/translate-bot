@@ -1,157 +1,27 @@
-const { Client, GatewayIntentBits, ContextMenuCommandBuilder, SlashCommandBuilder, ApplicationCommandType, REST, Routes, PermissionFlagsBits } = require('discord.js');
+const { Client, GatewayIntentBits, ContextMenuCommandBuilder, SlashCommandBuilder, ApplicationCommandType, REST, Routes } = require('discord.js');
 require('dotenv').config();
 const fs = require('fs');
 
-const translateContext = require('./context commands/translate.js');
+const translateContext = require('./commands/context commands/translate.js');
 
-const translateSlash = require('./slash commands/translate.js');
-const freakySlash = require('./slash commands/freaky.js');
+const translateSlash = require('./commands/slash commands/translate.js');
+const freakySlash = require('./commands/slash commands/freaky.js');
 
 const serverSlash = require('./settings/serversettings.js');
 const userSlash = require('./settings/usersettings.js');
 
+const flaggedSlash = require('./commands/slash commands/getFlagged.js');
+
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildPresences,
-    GatewayIntentBits.GuildMessageReactions,
-  ],
-  fetchAllMembers:true
-});
-
-client.once('ready', async () => {
-    // Register commands
-    await registerCommands();
-    console.log(`wake yo ass up bc it's time to go beast mode`);
-  
-    const guildData = {};
-  
-    client.guilds.cache.forEach(guild => {
-      const guildId = guild.id;
-      const guildName = guild.name;
-  
-      const adminAndOwnerMembers = guild.members.cache.filter(member => !member.user.bot && (member.id === guild.ownerId || member.permissions.has(PermissionFlagsBits.Administrator))).map(member => {
-        member.replyAsBot = false; // Set replyAsBot to true for each member
-        return {
-          id: member.id,
-          name: member.user.username,
-          replyAsBot: member.replyAsBot,
-          translateLanguage: 'en',
-          translateLanguageCorrectedForDiscord: 'us',
-          managed: member.permissions.has(PermissionFlagsBits.Administrator) || member.id === guild.ownerId
-        };
-      });
-
-      // Initialize guild settings
-      guildData[guildId] = {
-        name: guildName,
-        members: {},
-        allowedSTA: [],
-        allowedBrainrot: [],
-        guildTranslateLanguage: 'en',
-        guildTranslateLanguageCorrectedForDiscord: 'us',
-        owner: guild.ownerId
-      };
-
-      // Populate members under the guild
-      adminAndOwnerMembers.forEach(member => {
-        guildData[guildId].members[member.id] = {
-          name: member.name,
-          replyAsBot: member.replyAsBot,
-          translateLanguage: member.translateLanguage,
-          translateLanguageCorrectedForDiscord: member.translateLanguageCorrectedForDiscord,
-          managed: member.managed
-        };
-      });
-    });
-
-    try {
-      const existingGuildData = JSON.parse(fs.readFileSync('./database/guilds.json', 'utf8'));
-      
-      // Merge existing guild data with new data, prioritizing existing data
-      for (const guildId in guildData) {
-        if (existingGuildData[guildId]) {
-          // Merge members data
-          Object.assign(guildData[guildId].members, existingGuildData[guildId].members);
-        }
-      }
-      
-      fs.writeFileSync('./database/guilds.json', JSON.stringify(guildData, null, 2));
-    } catch (error) {
-      if (error.code !== 'ENOENT') {
-        console.error('Error reading or writing guilds.json:', error.message);
-      }
-    }
-});
-
-client.on('guildCreate', async (guild) => {
-    console.log(`Joined a new guild: ${guild.name}`);
-    const guildId = guild.id;
-    const guildSettings = JSON.parse(fs.readFileSync('./database/guilds.json', 'utf8'));
-
-    // Populate non-bot members
-    const nonBotMembers = guild.members.cache.filter(member => !member.user.bot).map(member => {
-        member.replyAsBot = false; // Set replyAsBot to true for each member
-        return {
-            id: member.id,
-            name: member.user.username,
-            replyAsBot: member.replyAsBot,
-            translateLanguage: 'en',
-            translateLanguageCorrectedForDiscord: 'us',
-            managed: member.permissions.has(PermissionFlagsBits.Administrator) || member.id === guild.ownerId
-        };
-    });
-
-    // Check if guild settings already exist and contain relevant data
-    const existingSettings = guildSettings[guildId];
-
-    if (existingSettings && (existingSettings.allowedSTA.length > 0 || existingSettings.allowedBrainrot.length > 0 || Object.keys(existingSettings.members).length > 0)) {
-        // Skip writing the guild settings if they already exist and contain relevant data
-    } else {
-        // Write guild settings if they don't exist or are incomplete
-        guildSettings[guildId] = {
-            name: guild.name,
-            members: {},
-            allowedSTA: [],
-            allowedBrainrot: [],
-            guildTranslateLanguage: 'en',
-            guildTranslateLanguageCorrectedForDiscord: 'us',
-            owner: guild.ownerId
-        };
-
-        // Populate members under the guild
-        nonBotMembers.forEach(member => {
-            guildSettings[guildId].members[member.id] = {
-                name: member.name,
-                replyAsBot: member.replyAsBot,
-                translateLanguage: member.translateLanguage,
-                translateLanguageCorrectedForDiscord: member.translateLanguageCorrectedForDiscord,
-                managed: member.managed
-            };
-        });
-    }
-
-    fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2));
-});
-
-client.on('interactionCreate', async (interaction) => {
-    // get what context menu reaction it was and use the appropriate function
-    if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'translate') {
-        await translateContext(interaction);
-    } else if (interaction.isCommand() && interaction.commandName === 'server') {
-        await serverSlash(interaction);
-    } else if (interaction.isCommand() && interaction.commandName === 'user') {
-        await userSlash(interaction)
-    } else if (interaction.isCommand() && interaction.commandName === 'freaky') {
-        await freakySlash(interaction);
-    } else if (interaction.isCommand() && interaction.commandName === 'translate') {
-        await translateSlash(interaction);
-    } else {
-        console.log('interaction not recognized');
-    } 
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.GuildMembers,
+      GatewayIntentBits.MessageContent,
+      GatewayIntentBits.GuildPresences,
+      GatewayIntentBits.GuildMessageReactions,
+    ],
+    fetchAllMembers: true
 });
 
 const commandsData = [
@@ -176,96 +46,147 @@ const commandsData = [
     new SlashCommandBuilder()
     .setName('translate')
     .setDescription('translate a message to a specific language')
-    .addStringOption(option => option.setName('text').setDescription('text to translate').setRequired(true))
-    .addStringOption(option => option.setName('language').setDescription('language to translate to').setRequired(true)
-        .addChoices(
-            {name: 'english', value: 'en', "emoji": "🇺🇸"},
-            {name: 'german', value: 'de'},
-            {name: 'french', value: 'fr'},
-            {name: 'spanish', value: 'es'},
-            {name: 'italian', value: 'it'},
-            {name: 'dutch', value: 'nl'},
-            {name: 'russian', value: 'ru'},
-            {name: 'japanese', value: 'ja'},
-            {name: 'chinese', value: 'zh'},
-            {name: 'korean', value: 'ko'},
-            {name: 'arabic', value: 'ar'},
-            {name: 'turkish', value: 'tr'},
-            {name: 'romanian', value: 'ro'},
-            {name: 'polish', value: 'pl'},
-            {name: 'norwegian', value: 'no'},
-            {name: 'swedish', value: 'sv'},
-            {name: 'danish', value: 'da'},
-            {name: 'finnish', value: 'fi'},
-            {name: 'greek', value: 'el'},
-            {name: 'hungarian', value: 'hu'},
-            {name: 'czech', value: 'cs'},
-            {name: 'slovak', value: 'sk'},
-            {name: 'croatian', value: 'hr'},
-            {name: 'serbian', value: 'sr'},
-            {name: 'slovenian', value: 'sl'}
-        )
-    ),
+    .addStringOption(option => option.setName('text').setDescription('text to translate').setRequired(true)),
+
+    new SlashCommandBuilder()
+    .setName('help')
+    .setDescription('get help with the bot'),
+
+    new SlashCommandBuilder()
+    .setName('flagged')
+    .setDescription(`YOU'RE🇺🇸NOT🇺🇸IMMUNE🇺🇸TO🇺🇸THE🇺🇸PROPAGANDA!`)
+    .addStringOption(option => option.setName('text').setDescription('put🇺🇸your🇺🇸text🇺🇸here').setRequired(true))
+
 ];
+
+client.on('interactionCreate', async (interaction) => {
+    // get what context menu reaction it was and use the appropriate function
+    if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'translate') {
+        await translateContext(interaction);
+    } else if (interaction.isCommand() && interaction.commandName === 'server') {
+        await serverSlash(interaction);
+    } else if (interaction.isCommand() && interaction.commandName === 'user') {
+        await userSlash(interaction)
+    } else if (interaction.isCommand() && interaction.commandName === 'freaky') {
+        await freakySlash(interaction);
+    } else if (interaction.isCommand() && interaction.commandName === 'translate') {
+        await translateSlash(interaction);
+    } else if (interaction.isCommand() && interaction.commandName === 'help') {
+        await helpSlash(interaction);
+    } else if (interaction.isCommand() && interaction.commandName === 'flagged') {
+        await flaggedSlash(interaction);
+    }
+});
 
 const rest = new REST().setToken(process.env.TOKEN);
 
 async function registerCommands() {
-    try {
-        console.log('Started refreshing application commands.');
+  try {
+    console.log('Started refreshing application commands.');
 
-        // Get existing commands from the server
-        const existingCommands = await rest.get(
-            Routes.applicationCommands(process.env.CLIENT_ID),
+    // Get existing global commands
+    const existingGlobalCommands = await rest.get(
+      Routes.applicationCommands(process.env.CLIENT_ID),
+    );
+
+    // Remove global commands that are not present in commandsData
+    const commandsToRemove = existingGlobalCommands.filter(command => {
+      return !commandsData.some(newCommand => newCommand.name === command.name);
+    });
+
+    // Remove global commands that are not present in commandsData
+    if (commandsToRemove.length > 0) {
+      await Promise.all(commandsToRemove.map(command => {
+        return rest.delete(
+          Routes.applicationCommand(process.env.CLIENT_ID, command.id),
         );
+      }));
 
-        // Filter out commands that are not present in commandsData
-        const commandsToRemove = existingCommands.filter(command => {
-            return !commandsData.some(newCommand => newCommand.name === command.name);
-        });
-
-        // Remove commands that are not present in commandsData
-        if (commandsToRemove.length > 0) {
-            await Promise.all(commandsToRemove.map(command => {
-                return rest.delete(
-                    Routes.applicationCommand(process.env.CLIENT_ID, command.id),
-                );
-            }));
-
-            console.log('Successfully removed commands:', commandsToRemove.map(command => command.name));
-        }
-
-        // Register new commands
-        const registeredCommands = await rest.put(
-            Routes.applicationCommands(process.env.CLIENT_ID),
-            { body: commandsData },
-        );
-
-        // Log the added commands
-        console.log('Added commands:');
-        registeredCommands.forEach(command => {
-            console.log(`Command Name: ${command.name} | Command ID: ${command.id} | Command Type: ${command.type}`);
-        });
-
-        // Register commands to all guilds and console log the guilds
-        const guilds = client.guilds.cache;
-        await Promise.all(guilds.map(async guild => {
-            const existingGuildCommands = await guild.commands.fetch();
-            const commandsToRemoveInGuild = existingGuildCommands.filter(command => {
-                return !commandsData.some(newCommand => newCommand.name === command.name);
-            });
-            if (commandsToRemoveInGuild.size > 0) {
-                await Promise.all(commandsToRemoveInGuild.map(command => command.delete()));
-                console.log(`Removed commands from guild '${guild.name}':`, commandsToRemoveInGuild.map(command => command.name));
-            }
-            await guild.commands.set(commandsData);
-            console.log(`Registered commands to guild: ${guild.name}`);
-        }));
-
-        console.log('Successfully reloaded context and slash commands.');
-    } catch (error) {
-        console.error('Error refreshing application commands:', error);
+      console.log('Successfully removed global commands:', commandsToRemove.map(command => command.name));
     }
+
+    // Register new commands
+    const registeredGlobalCommands = await rest.put(
+      Routes.applicationCommands(process.env.CLIENT_ID),
+      { body: commandsData },
+    );
+
+    // Log the added global commands
+    console.log('Added global commands:');
+    registeredGlobalCommands.forEach(command => {
+      console.log(`Command Name: ${command.name} | Command ID: ${command.id} | Command Type: ${command.type}`);
+    });
+
+    console.log('Successfully reloaded global commands.');
+  } catch (error) {
+    console.error('Error refreshing global commands:', error);
+  }
 }
+
+function readGuildSettings() {
+  try {
+    const guildSettings = JSON.parse(fs.readFileSync('./database/guilds.json'));
+    return guildSettings;
+  } catch (error) {
+    console.error('Error reading guild settings:', error);
+    return {};
+  }
+}
+
+function saveGuildSettings(guildSettings) {
+  try {
+    fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2));
+    console.log('Guild settings saved.');
+  } catch (error) {
+    console.error('Error saving guild settings:', error);
+  }
+}
+
+client.once('ready', async () => {
+  // Register commands
+  await registerCommands();
+  console.log(`wake yo ass up bc it's time to go beast mode`);
+
+  const guildSettings = readGuildSettings();
+
+  // Check guilds and register commands globally if necessary
+  client.guilds.cache.forEach(async guild => {
+    if (!guildSettings[guild.id]) {
+      guildSettings[guild.id] = {
+        name: guild.name,
+        members: {},
+        allowedSTA: [],
+        guildTranslateLanguage: 'en',
+        guildTranslateLanguageCorrectedForDiscord: 'us',
+        owner: guild.ownerId
+      };
+      saveGuildSettings(guildSettings);
+      await registerCommands();
+    }
+  });
+});
+
+client.on('guildCreate', async (guild) => {
+    console.log(`Joined a new guild: ${guild.name}`);
+    await registerCommands();
+
+    // check if guild is already registered
+    const guildSettings = readGuildSettings();
+    if (guildSettings[guild.id]) {
+        console.log('Guild is already registered.');
+        return;
+    }
+
+    // Initialize guild settings
+    guildSettings[guild.id] = {
+        name: guild.name,
+        members: {},
+        allowedSTA: [],
+        guildTranslateLanguage: 'en',
+        guildTranslateLanguageCorrectedForDiscord: 'us',
+        owner: guild.ownerId
+    };
+    saveGuildSettings(guildSettings);
+});
 
 client.login(process.env.TOKEN);

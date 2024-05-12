@@ -1,4 +1,4 @@
-const freakyAlphabet = require('../fonts/freaky.json');
+const freakyAlphabet = require('../../fonts/freaky.json');
 
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, RoleSelectMenuBuilder } = require('discord.js');
 const fs = require('fs');
@@ -6,16 +6,9 @@ const fs = require('fs');
 const buttons = [
     new ButtonBuilder()
         .setCustomId('confirm-freakall')
-        .setLabel('send to all?')
+        .setLabel('send to this channel')
         .setStyle(ButtonStyle.Danger),
 ];
-
-const emojiReaction = [
-    '<:catthumb:1235660903601541262>',
-    '<:catthumb2:1235660901571624971>',
-    '<:catthumb3:1235660900057354320>',
-    '<:catthumb4:1235660898408992818>',
-]
 
 module.exports = async function handleSlashCommand(interaction) {
     if (interaction.isCommand() && interaction.commandName === 'freaky') {
@@ -23,7 +16,6 @@ module.exports = async function handleSlashCommand(interaction) {
         // Get the boolean value directly from the options, defaulting to false
         const disableEmojis = interaction.options.getBoolean('disable-emojis') || false;
 
-        
         // check if user is admin, owner or one of allowedSTA roles
         const member = interaction.member;
         const guildID = interaction.guild.id;
@@ -36,8 +28,8 @@ module.exports = async function handleSlashCommand(interaction) {
         // check if user has atleast one of the allowed roles
         const hasRole = member.roles.cache.some(role => allowedSTA.includes(role.id) || isAdmin);
 
-        console.log('textInput:', textInput);
-        console.log('disableEmojis:', disableEmojis);
+        //console.log('textInput:', textInput);
+        //console.log('disableEmojis:', disableEmojis);
 
         // Transform the text using the freaky alphabet
         const transformedText = textInput
@@ -54,13 +46,19 @@ module.exports = async function handleSlashCommand(interaction) {
                 content: finalText,
                 ephemeral: true,
             });
+        } else if (textInput.length > 2000) {
+            await interaction.reply({
+                content: 'sorry, this message is too long..',
+                ephemeral: true,
+            });
+            return;
         } else {
             await interaction.reply({
                 content: finalText,
                 ephemeral: true,
                 components: [new ActionRowBuilder().addComponents(buttons)],
             });
-        }
+        }  
 
         // Create a collector for the button
         const sendFreakyToAllButtonFilter = (i) => i.customId === 'confirm-freakall' && i.user.id === interaction.user.id;
@@ -91,10 +89,18 @@ module.exports = async function handleSlashCommand(interaction) {
    
                 // Update the interaction message
                 await i.update({
-                    content: emojiReaction[Math.floor(Math.random() * emojiReaction.length)],
+                    content: 'done! :3',
                     components: [],
                 });
             }
          })
+
+         // if user runs the same command again and doesn't press the button stop the collector
+         interaction.client.on('interactionCreate', async (i) => {
+            if (i.isCommand() && i.commandName === 'freaky') {
+                sendFreakyToAllCollector.stop();
+
+            }
+        });
     }
 }
