@@ -1,5 +1,8 @@
 const freakyAlphabet = require('../../fonts/freaky.json');
 
+const dotenv = require('dotenv');
+dotenv.config();
+
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, RoleSelectMenuBuilder } = require('discord.js');
 const fs = require('fs');
 
@@ -67,7 +70,9 @@ module.exports = async function handleSlashCommand(interaction) {
         sendFreakyToAllCollector.on('collect', async (i) => {
 
             if (!replyAsBot) {
-                console.log(`user ${member.user.username} has the required permissions and configured to send messages as them.`);
+                if (process.env.DISABLE_DEBUG === 'false') {
+                    console.log(`user ${member.user.username} has the required permissions and configured to send messages as them.`);
+                }
                 const webhook = await interaction.channel.createWebhook({
                     name: interaction.user.globalName,
                     avatar: interaction.user.displayAvatarURL(),
@@ -82,7 +87,9 @@ module.exports = async function handleSlashCommand(interaction) {
                     components: [],
                 });
             } else {
-                console.log(`user ${member.user.username} has the required permissions and configured to send messages as bot.`);
+                if (process.env.DISABLE_DEBUG === 'false') {
+                    console.log(`user ${member.user.username} has the required permissions and configured to send messages as bot.`);
+                }
                 await interaction.channel.send({
                     content: finalText,
                 });
