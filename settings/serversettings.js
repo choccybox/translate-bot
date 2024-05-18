@@ -5,8 +5,8 @@ dotenv.config();
 
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, RoleSelectMenuBuilder } = require('discord.js');
 
-const languageSelection = require('../database/languageSelection.json');
-const isoCorrection = require('../database/isoCorrection.json');
+const languageSelection = require('../defaults/languageSelection.json');
+const isoCorrection = require('../defaults/isoCorrection.json');
 
 const buttons = [
     new ButtonBuilder()
@@ -186,10 +186,6 @@ module.exports = async function handleSlashCommand(interaction) {
                     resultArray[chunkIndex].push(item);
                     return resultArray;
                 }, []);
-
-                if (process.env.DISABLE_DEBUG === 'false') {
-                    console.log(`Created ${selectMenus.length} select menus with a total of ${languageSelection.length} entries`);
-                }
 
                 // create a select menu with language options
                 const selectMenu = new StringSelectMenuBuilder()

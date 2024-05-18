@@ -5,16 +5,9 @@ const dotenv = require('dotenv');
 // load environment variables
 dotenv.config();
 
-if (process.env.DISABLE_DEBUG) {
-    console.log('console logs are enabled');
-} else {
-    console.log('console logs are disabled');
-}
-
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder,  } = require('discord.js');
 
-const languageSelection = require('../../database/languageSelection.json');
-const isoCorrection = require('../../database/isoCorrection.json');
+const languageSelection = require('../../defaults/languageSelection.json');
 
 const buttons = [
     new ButtonBuilder()
@@ -30,6 +23,7 @@ let errorMsg = 'oopsie woopsie, something went fucky wucky owo!'
 module.exports = async function handleSlashCommand(interaction) {
     if (interaction.isCommand() && interaction.commandName === 'translate') {
     const targetMessage = interaction.options.getString('text');
+    console.log('using slash command')
 
     const guildID = interaction.guild.id;
     const guildSettings = JSON.parse(fs.readFileSync('./database/guilds.json', 'utf8'));
@@ -99,57 +93,44 @@ module.exports = async function handleSlashCommand(interaction) {
         selectCollectors.stop();
 
         // translate the message
-        translateMessageToEnglish(targetMessage, interaction, selectedLanguage)
+        await translateMessageToEnglish(targetMessage, interaction, selectedLanguage)
             .then((translatedMessage) => {
 
-                const botHasPerm = interaction.guild.members.cache.get(process.env.CLIENT_ID);
-                const permissions = botHasPerm.permissions.toArray();
-                if (process.env.DISABLE_DEBUG === 'false') {
-                    console.log(permissions);
-                    console.log('is guild owner?: ' +isGuildOwner);
-                    console.log('has STA role?: ' + hasRole);
-                }
+                const text = translatedMessage[0].alreadyInLang;
+                const inLang = translatedMessage[0].inLang;
 
-                const flagEmoji = translatedMessage.match(/:flag_\w+:/g);
-                if (translatedMessage.includes('this message is already in')) {
+                console.log('text:', text);
+                console.log('inLang:', inLang);
+
+                if (inLang === true) {
+                    const message = text.replace(/\/servers/g, '');
                     interaction.update({
                         embeds: [{
-                            title: "",
-                            description: 'this message is already in servers preffered language: ' + flagEmoji,
+                            title: message,
+                            description: ``,
                             color: embedColor,
                         }],
-                        components: [],
                         ephemeral: true,
                     });
-                } else if (!permissions.some(permission => permission === 'Administrator' || permission === 'ManageWebhooks')) {
-                    if (process.env.DISABLE_DEBUG === 'false' || isGuildOwner === false) {
-                        console.log(isGuildOwner === true ? 'bot doesnt have the required permissions and user is the guild owner' : 'bot doesnt have the required permissions and user is not the guild owner');
-                    }
-
+                    return;
+                } else if (inLang === false && !hasRole) {
                     interaction.update({
                         embeds: [{
-                            title: "",
-                            description: `**${translatedMessage}**`,
+                            title: text,
+                            description: ``,
                             color: embedColor,
-                            footer: {
-                                text: isGuildOwner === true ? 'let me say it this way, even tho you can send messages to everyone, i cant. YOU can fix it tho' : 'let me say it this way, even tho you can send messages to everyone, i cant. the owner can tho',
-                            },
                         }],
-                        components: [],
                         ephemeral: true,
                     });
-                } else {
-                    if (process.env.DISABLE_DEBUG === 'false' || hasRole === true) {
-                        console.log(hasRole === true ? 'bot has the required permissions and user has the required role' : 'bot has the required permissions and user does not have the required role');
-                    }
-
+                    return;
+                } else if (inLang === false && hasRole) {
                     interaction.update({
                         embeds: [{
-                            title: "",
-                            description: `**${translatedMessage}**`,
+                            title: text,
+                            description: ``,
                             color: embedColor,
                         }],
-                        components: hasRole === true ? [new ActionRowBuilder().addComponents(buttons)] : [],
+                        components: [new ActionRowBuilder().addComponents(buttons)],
                         ephemeral: true,
                     });
                 }
@@ -170,7 +151,7 @@ module.exports = async function handleSlashCommand(interaction) {
 
                         // send webhook message
                         webhook.send({
-                            content: translatedMessage,
+                            content: text,
                             username: interaction.user.username,
                             avatarURL: interaction.user.displayAvatarURL(),
                         });
@@ -195,7 +176,16 @@ module.exports = async function handleSlashCommand(interaction) {
                         if (process.env.DISABLE_DEBUG === 'false') {
                             console.log('user has configured to reply as bot');
                         }
-                        interaction.channel.send(translatedMessage);
+                        interaction.channel.send(text);
+                        interaction.update({
+                            embeds: [{
+                                title: "done! :3",
+                                description: ``,
+                                color: embedColor,
+                            }],
+                            components: [],
+                            ephemeral: true,
+                        });
                         buttonCollector.stop();
                     }
                 });
@@ -279,7 +269,6 @@ module.exports = async function handleSlashCommand(interaction) {
             selectCollectors.stop();
             newPrevCollector.stop();
             newNextCollector.stop();
-            buttonCollector.stop();
         }
     });
 }
