@@ -46,18 +46,10 @@ module.exports = async function handleSlashCommand(interaction) {
 
     // get member settings
     const userSettingsWrite = userSettings[guildID].members[userID];
+    const AIResetIn = fs.readFileSync('./database/AIresetIn.txt', 'utf8');
     
-
     const embedTitle = 'user settings for **@' + interaction.user.username + '**';
     const embedColor = 2829617;
-    const firstMessage =
-        'reply as bot: ' +
-        (userSettingsWrite.replyAsBot ? '**yes**' : '**no**') +
-        '\n\n' +
-        'translation language: ' +
-        ':flag_' + userSettingsWrite.translateLanguageCorrectedForDiscord + ':' +
-        '\n\n' +
-        'can translate for all?: ' + hasSTARoleRenamed;
 
     if (interaction.commandName === 'user') {
         const row = new ActionRowBuilder().addComponents(
@@ -73,13 +65,31 @@ module.exports = async function handleSlashCommand(interaction) {
         );
 
         await interaction.reply({
-            embeds: [
+            embeds: [{
+            title: embedTitle,
+            fields: [
                 {
-                    title: embedTitle,
-                    description: firstMessage,
-                    color: embedColor
+                name: 'reply as bot',
+                value: (userSettingsWrite.replyAsBot ? '**yes**' : '**no**') + '\n\n',
+                inline: true
+                },
+                {
+                name: 'translation language',
+                value: ':flag_' + userSettingsWrite.translateLanguageCorrectedForDiscord + ':',
+                inline: true
+                },
+                {
+                name: 'can translate for all?',
+                value: hasSTARoleRenamed,
+                inline: true
+                },
+                {
+                name: 'AI uses remaning',
+                value: userSettingsWrite.AIuses + ' uses, resets in **' + AIResetIn + '**',
                 }
             ],
+            color: embedColor
+            }],
             components: [row],
             ephemeral: true
         });

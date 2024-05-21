@@ -1,22 +1,32 @@
 const { Client, GatewayIntentBits, ContextMenuCommandBuilder, SlashCommandBuilder, ApplicationCommandType, REST, Routes } = require('discord.js');
 require('dotenv').config();
 const fs = require('fs');
+const path = require('path');
+const schedule = require('node-schedule');
 
-const ocrContext = require('./commands/context commands/OCR.js');
+const ocrContext = require('./commands/context commands/IMAGE/OCR.js');
 const flaggedContext = require('./commands/context commands/flag.js');
-const flaggedSlash = require('./commands/slash commands/flag.js');
+const flaggedSlash = require('./commands/slash commands/TEXT/flag.js');
 
-const translateSlash = require('./commands/slash commands/translate.js');
-const translateContext = require('./commands/context commands/translate.js');
+const translateSlash = require('./commands/slash commands/TEXT/translate.js');
+const translateContext = require('./commands/context commands/TEXT/translate.js');
 
-const freakySlash = require('./commands/slash commands/freaky.js');
-const freakyContext = require('./commands/context commands/freaky.js');
+const freakySlash = require('./commands/slash commands/TEXT/freaky.js');
+const freakyContext = require('./commands/context commands/TEXT/freaky.js');
 
 const serverSlash = require('./settings/serversettings.js');
 const userSlash = require('./settings/usersettings.js');
 
-const rioDeJaneiroSlash = require('./commands/slash commands/rioDeJaneiroSlash.js');
-const rioDeJaneiroContext = require('./commands/context commands/rioDeJaneiroContext.js');
+const rioDeJaneiroSlash = require('./commands/slash commands/IMAGE/rioDeJaneiro.js');
+const rioDeJaneiroContext = require('./commands/context commands/IMAGE/rioDeJaneiro.js');
+
+const audioAnalyze = require('./commands/slash commands/AI/audioAnalyze.js');
+
+const summarizeUser = require('./commands/slash commands/AI/summarizeUser.js');
+const summarizeChannel = require('./commands/slash commands/AI/summarizeChannel.js');
+
+const captionTop = require('./commands/slash commands/IMAGE/captionTop.js');
+const captionBottom = require('./commands/slash commands/IMAGE/captionBottom.js');
 
 const client = new Client({
     intents: [
@@ -31,58 +41,101 @@ const client = new Client({
 });
 
 const commandsData = [
-    new ContextMenuCommandBuilder()
-    .setName('translate text')
-    .setType(ApplicationCommandType.Message),
+  new ContextMenuCommandBuilder()
+  .setName('translate text')
+  .setType(ApplicationCommandType.Message),
 
-    new ContextMenuCommandBuilder()
-    .setName('OCR')
-    .setType(ApplicationCommandType.Message),
+  new ContextMenuCommandBuilder()
+  .setName('OCR')
+  .setType(ApplicationCommandType.Message),
 
-    new ContextMenuCommandBuilder()
-    .setName('flagged')
-    .setType(ApplicationCommandType.Message),
+  new ContextMenuCommandBuilder()
+  .setName('flagged')
+  .setType(ApplicationCommandType.Message),
 
-    new ContextMenuCommandBuilder()
-    .setName('rio de janeiro')
-    .setType(ApplicationCommandType.Message),
+  new ContextMenuCommandBuilder()
+  .setName('rio de janeiro')
+  .setType(ApplicationCommandType.Message),
 
-    new ContextMenuCommandBuilder()
-    .setName('freaky text')
-    .setType(ApplicationCommandType.Message),
+  new ContextMenuCommandBuilder()
+  .setName('freaky text')
+  .setType(ApplicationCommandType.Message),
 
-    new SlashCommandBuilder()
-    .setName('server')
-    .setDescription('modify server settings'),
+  new SlashCommandBuilder()
+  .setName('server')
+  .setDescription('modify server settings'),
 
-    new SlashCommandBuilder()
-    .setName('user')
-    .setDescription('modify user settings'),
+  new SlashCommandBuilder()
+  .setName('user')
+  .setDescription('modify user settings'),
 
-    new SlashCommandBuilder()
-    .setName('freaky')
-    .setDescription('make text 𝓯𝓻𝓮𝓪𝓴𝔂👅💦')
-    .addStringOption(option => option.setName('text').setDescription('text to make 𝓯𝓻𝓮𝓪𝓴𝔂👅💦').setRequired(true))
-    .addBooleanOption(option => option.setName('disable-emojis').setDescription('disable 👅💦 emojis').setRequired(false)),
+  new SlashCommandBuilder()
+  .setName('freaky')
+  .setDescription('make text 𝓯𝓻𝓮𝓪𝓴𝔂👅💦')
+  .addStringOption(option => option.setName('text').setDescription('text to make 𝓯𝓻𝓮𝓪𝓴𝔂👅💦').setRequired(true))
+  .addBooleanOption(option => option.setName('disable-emojis').setDescription('disable 👅💦 emojis').setRequired(false)),
 
-    new SlashCommandBuilder()
-    .setName('translate')
-    .setDescription('translate a message to a specific language')
-    .addStringOption(option => option.setName('text').setDescription('text to translate').setRequired(true)),
+  new SlashCommandBuilder()
+  .setName('translate')
+  .setDescription('translate a message to a specific language')
+  .addStringOption(option => option.setName('text').setDescription('text to translate').setRequired(true)),
 
-    new SlashCommandBuilder()
-    .setName('help')
-    .setDescription('get help with the bot'),
+  new SlashCommandBuilder()
+  .setName('help')
+  .setDescription('get help with the bot'),
 
-    new SlashCommandBuilder()
-    .setName('flagged')
-    .setDescription(`YOU'RE🇺🇸NOT🇺🇸IMMUNE🇺🇸TO🇺🇸THE🇺🇸PROPAGANDA!`)
-    .addStringOption(option => option.setName('text').setDescription('put🇺🇸your🇺🇸text🇺🇸here').setRequired(true)),
+  new SlashCommandBuilder()
+  .setName('flagged')
+  .setDescription(`YOU'RE🇺🇸NOT🇺🇸IMMUNE🇺🇸TO🇺🇸THE🇺🇸PROPAGANDA!`)
+  .addStringOption(option => option.setName('text').setDescription('put🇺🇸your🇺🇸text🇺🇸here').setRequired(true)),
 
-    new SlashCommandBuilder()
-    .setName('riodejaneiro')
-    .setDescription('instagram type shit')
-    .addAttachmentOption(option => option.setName('image').setDescription('image here').setRequired(true))
+  new SlashCommandBuilder()
+  .setName('riodejaneiro')
+  .setDescription('instagram type shit')
+  .addAttachmentOption(option => option.setName('image').setDescription('your image').setRequired(true))
+  .addIntegerOption(option => option.setName('intensity').setDescription('intensity of the filter, 2 is light, 8 is heavy, default is 5')),
+
+  new SlashCommandBuilder()
+  .setName('caption-top')
+  .setDescription('adds a caption on the top of an image')
+  .addAttachmentOption(option => option.setName('image').setDescription('your image').setRequired(true))
+  .addStringOption(option => option.setName('caption').setDescription('your caption').setRequired(true)),
+
+  new SlashCommandBuilder()
+  .setName('caption-bottom')
+  .setDescription('adds a caption on the bottom of an image')
+  .addAttachmentOption(option => option.setName('image').setDescription('your image').setRequired(true))
+  .addStringOption(option => option.setName('caption').setDescription('your caption').setRequired(true)),
+
+  new SlashCommandBuilder()
+  .setName('audio-analyze')
+  .setDescription('AI - uses OpenAI Whisper audio model to transcribe audio to text')
+  .addAttachmentOption(option => option.setName('audio').setDescription('audio file').setRequired(true))
+  .addStringOption(option =>
+    option.setName('output')
+      .setDescription('what kind of an output do you need')
+      .setRequired(true)
+      .addChoices(
+        { name: 'segmented', value: 'segments_only' },
+        { name: 'pure text', value: 'raw_only' },
+      )
+      .setRequired(true)),
+
+  new SlashCommandBuilder()
+  .setName('summarize-user')
+  .setDescription('AI - uses Llama v3 text model to generate a summary of user\'s last 100 messages')
+  .addUserOption(option =>
+    option.setName('user')
+      .setDescription('user to summarize')
+      .setRequired(true)),
+
+  new SlashCommandBuilder()
+  .setName('summarize-channel')
+  .setDescription('AI - uses Llama v3 text model to generate a summary of last 100 messages in a channel')
+  .addChannelOption(option =>
+    option.setName('channel')
+      .setDescription('channel to summarize')
+      .setRequired(true)),
 ];
 
 client.on('interactionCreate', async (interaction) => {
@@ -103,8 +156,6 @@ client.on('interactionCreate', async (interaction) => {
         await freakySlash(interaction);
     } else if (interaction.isCommand() && interaction.commandName === 'translate') {
         await translateSlash(interaction);
-    } else if (interaction.isCommand() && interaction.commandName === 'help') {
-        await helpSlash(interaction);
     } else if (interaction.isCommand() && interaction.commandName === 'flag') {
         await flaggedSlash(interaction);
     } else if (interaction.isCommand() && interaction.commandName === 'riodejaneiro') {
@@ -112,7 +163,17 @@ client.on('interactionCreate', async (interaction) => {
     } else if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'freaky text') {
         await freakyContext(interaction);
     } else if (interaction.isCommand() && interaction.commandName === 'help') {
-        await interaction.reply('i ain\'t doing that');
+        await interaction.reply({ files: ['images/hellna.png'], ephemeral: true});
+    } else if (interaction.isCommand() && interaction.commandName === 'audio-analyze') {
+        await audioAnalyze(interaction);
+    } else if (interaction.isCommand() && interaction.commandName === 'summarize-user') {
+        await summarizeUser(interaction);
+    } /* else if (interaction.isCommand() && interaction.commandName === 'summarize-channel') {
+        await summarizeChannel(interaction);
+    } */ else if (interaction.isCommand() && interaction.commandName === 'caption-top') {
+        await captionTop(interaction);
+    } else if (interaction.isCommand() && interaction.commandName === 'caption-bottom') {
+        await captionBottom(interaction);
     }
 });
 
@@ -159,6 +220,89 @@ async function registerCommands() {
   } catch (error) {
     console.error('Error refreshing global commands:', error);
   }
+}
+
+function resetAIuses() {
+  try {
+      // Load the guilds.json file
+      const guildsData = fs.readFileSync(path.join(__dirname, 'database', 'guilds.json'), 'utf8');
+      const guilds = JSON.parse(guildsData);
+
+      // Iterate through each guild
+      for (const guildId in guilds) {
+          const guild = guilds[guildId];
+          
+          // Iterate through each member in the guild
+          for (const memberId in guild.members) {
+              const member = guild.members[memberId];
+              
+              if (member.AIuses < 10) {
+                  // Reset the user's AIuses
+                  member.AIuses = 10;
+              }
+          }
+      }
+
+      // Save the updated guilds.json file
+      fs.writeFileSync(path.join(__dirname, 'database', 'guilds.json'), JSON.stringify(guilds, null, 2));
+      console.log('AIuses have been reset.');
+  } catch (error) {
+      console.error('Error reading or writing guilds.json file:', error);
+  }
+}
+
+// Schedule the resetAIuses function to run daily at midnight
+const job = schedule.scheduleJob('0 0 * * *', resetAIuses); // Runs every day at midnight
+// first check if its midnight and then run the function
+if (new Date().getHours() === 0 && new Date().getMinutes() === 0) {
+  resetAIuses();
+} else {
+  const nextInvocation = job.nextInvocation();
+  const timeDifference = nextInvocation.getTime() - new Date().getTime();
+  const hours = Math.floor(timeDifference / (1000 * 60 * 60));
+  const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+
+  let timeString = '';
+  if (hours > 0) {
+    timeString += `${hours} hour${hours > 1 ? 's' : ''}`;
+  }
+  if (hours > 0 && minutes > 0) {
+    timeString += ' ';
+  }
+  if (minutes > 0) {
+    timeString += `${minutes} minute${minutes > 1 ? 's' : ''}`;
+  }
+
+  console.log('resetAIuses will run in:', timeString);
+
+  // write to database AIResetIn.json
+  const airesetin = {
+    time: timeString
+  };
+  fs.writeFileSync(path.join(__dirname, 'database', 'AIResetIn.txt'), timeString);
+
+  // update file every minute
+  setInterval(() => {
+    const timeDifference = job.nextInvocation().getTime() - new Date().getTime();
+    const hours = Math.floor(timeDifference / (1000 * 60 * 60));
+    const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+
+    let timeString = '';
+    if (hours > 0) {
+      timeString += `${hours} hour${hours > 1 ? 's' : ''}`;
+    }
+    if (hours > 0 && minutes > 0) {
+      timeString += ' ';
+    }
+    if (minutes > 0) {
+      timeString += `${minutes} minute${minutes > 1 ? 's' : ''}`;
+    }
+
+    const airesetin = {
+      time: timeString
+    };
+    fs.writeFileSync(path.join(__dirname, 'database', 'AIResetIn.txt'), timeString);
+  }, 60000);
 }
 
 function readGuildSettings() {

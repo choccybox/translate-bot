@@ -3,6 +3,7 @@
     "replyAsBot": false,
     "extraInfo": true,
     "replyAsEmbed": true,
+    "AIuses": 10,
     "translateLanguage": "en",
     "translateLanguageCorrectedForDiscord": "us",
     "managed": false
