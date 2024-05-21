@@ -129,13 +129,13 @@ const commandsData = [
       .setDescription('user to summarize')
       .setRequired(true)),
 
-  new SlashCommandBuilder()
+/*   new SlashCommandBuilder()
   .setName('summarize-channel')
   .setDescription('AI - uses Llama v3 text model to generate a summary of last 100 messages in a channel')
   .addChannelOption(option =>
     option.setName('channel')
       .setDescription('channel to summarize')
-      .setRequired(true)),
+      .setRequired(true)), */
 ];
 
 client.on('interactionCreate', async (interaction) => {
