@@ -1,13 +1,15 @@
 const dotenv = require('dotenv');
 const fs = require('fs');
 const axios = require('axios');
-const ffmpeg = require('ffmpeg');
 const { ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
+const sharp = require('sharp');
 
 dotenv.config();
 
 let timer;
 let timerExpired = false;
+
+const ongoingInteractions = new Map();
 
 function createButtonRow(currentIntensity) {
     return new ActionRowBuilder().addComponents(
@@ -24,31 +26,45 @@ function createButtonRow(currentIntensity) {
     );
 }
 
-function changeOpacity(imagePath, intensityDecimal, overlaidImagePath, width, height, overlayText, fontPath, fontSize) {
-    if (fontSize < 20) {
-        return new Promise((resolve, reject) => {
-            ffmpeg(imagePath)
-                .input('images/riodejaneiro.png')
-                .complexFilter([
-                    `[1:v]scale=${width}:${height},format=rgba,colorchannelmixer=aa=${intensityDecimal}[ovrl];[0:v][ovrl]overlay,drawtext=fontfile=${fontPath}:text='${overlayText}':fontcolor=white:fontsize=20:shadowcolor=black:shadowx=0:shadowy=0:x=(w-text_w)/2:y=(h-text_h)/2`
-                ])
-                .output(overlaidImagePath)
-                .on('end', resolve)
-                .on('error', reject)
-                .run();
-        });
-    } else {
-        return new Promise((resolve, reject) => {
-            ffmpeg(imagePath)
-                .input('images/riodejaneiro.png')
-                .complexFilter([
-                    `[1:v]scale=${width}:${height},format=rgba,colorchannelmixer=aa=${intensityDecimal}[ovrl];[0:v][ovrl]overlay,drawtext=fontfile=${fontPath}:text='${overlayText}':fontcolor=white:fontsize=${fontSize}:shadowcolor=black:shadowx=0:shadowy=0:x=(w-text_w)/2:y=(h-text_h)/2`
-                ])
-                .output(overlaidImagePath)
-                .on('end', resolve)
-                .on('error', reject)
-                .run();
-        });
+async function changeOpacity(interaction, imagePath, intensityDecimal, overlaidImagePath, width, height, overlayText, fontPath, fontSize) {
+    // Resize the riodejaneiro image and change its opacity
+    try {
+        const data = await sharp('images/riodejaneiro.png')
+            .resize(width, height)
+            .toBuffer();
+
+        const dataWithOpacity = await sharp(data)
+            .composite([{
+                input: Buffer.from(
+                    `<svg width="${width}" height="${height}">
+                        <rect x="0" y="0" width="${width}" height="${height}" fill="black" fill-opacity="${intensityDecimal}"/>
+                    </svg>`
+                ),
+                blend: 'dest-in'
+            }])
+            .toBuffer();
+
+        const textMeta = await sharp('images/rioDeJaneiroText.png').metadata();
+        const textWidth = textMeta.width;
+        const textHeight = textMeta.height;
+
+        const left = Math.round((width - textWidth) / 2);
+        const top = Math.round((height - textHeight) / 2);
+
+        const finalOverlayData = await sharp(dataWithOpacity)
+            .composite([{ input: 'images/rioDeJaneiroText.png', top, left }])
+            .toBuffer();
+
+        await sharp(imagePath)
+            .composite([{ input: finalOverlayData, blend: 'over' }])
+            .toFile(overlaidImagePath);
+
+        console.log(`Final image saved as: ${overlaidImagePath}`);
+        sharp.cache(false);
+        return overlaidImagePath;
+    } catch (error) {
+        console.error('Error processing the image:', error);
+        throw error;
     }
 }
 
@@ -71,9 +87,18 @@ module.exports = async function handleInteraction(interaction) {
             await interaction.deferReply({ ephemeral: true });
         }
 
+        const userId = interaction.user.id;
+        const commandName = interaction.commandName;
+
+        if (ongoingInteractions.has(userId)) {
+            const previousInteraction = ongoingInteractions.get(userId);
+            previousInteraction.collector.stop('new interaction');
+            console.log('Stopped previous interaction for user:', userId);
+        }
+
         const randomName = Math.floor(Math.random() * 100000000);
-        const originalImagePath = `temp/${randomName}-RIO.jpg`;
-        const overlaidImagePath = `temp/${randomName}-RIO-OVERLAID.jpg`;
+        const originalImagePath = `temp/${randomName}-RIO.png`;
+        const overlaidImagePath = `temp/${randomName}-RIO-OVERLAID.png`;
         const overlayImagePath = 'images/riodejaneiro.png';
         const overlayText = 'Rio De Janeiro';
         const fontPath = 'fonts/InstagramSans.ttf'; // Path to your custom font file
@@ -99,25 +124,21 @@ module.exports = async function handleInteraction(interaction) {
             const imageBuffer = await axios.get(imageUrl, { responseType: 'arraybuffer' });
             fs.writeFileSync(originalImagePath, imageBuffer.data);
 
-            const originalImageMetadata = await new Promise((resolve, reject) => {
-                ffmpeg.ffprobe(originalImagePath, (err, metadata) => {
-                    if (err) reject(err);
-                    else resolve(metadata);
-                });
-            });
+            const originalImageMetadata = await sharp(originalImagePath).metadata();
 
-            const { width, height } = originalImageMetadata.streams[0];
+            const { width, height } = originalImageMetadata;
             const fontSize = Math.min(Math.floor(width * fontSizePercent), Math.floor(height * fontSizePercent));
             console.log('Font size:', fontSize);
 
-            await changeOpacity(originalImagePath, intensityDecimal, overlaidImagePath, width, height, overlayText, fontPath, fontSize);
+            await changeOpacity(interaction, originalImagePath, intensityDecimal, overlaidImagePath, width, height, overlayText, fontPath, fontSize);
 
-            await interaction.followUp({
-                files: [overlaidImagePath],
-                components: [createButtonRow(intensityDecimal)]
-            });
-
-            fs.unlinkSync(overlaidImagePath);
+            if (fs.existsSync(overlaidImagePath)) {
+                await interaction.followUp({ files: [overlaidImagePath], components: [createButtonRow(intensityDecimal)] });
+            } else {
+                setTimeout(() => {
+                    interaction.followUp({ files: [overlaidImagePath], components: [createButtonRow(intensityDecimal)] });
+                }, 1000);
+            }
 
             const collector = interaction.channel.createMessageComponentCollector({ time: 60000 });
 
@@ -139,10 +160,7 @@ module.exports = async function handleInteraction(interaction) {
                     restartTimer();
                 }
 
-                await changeOpacity(originalImagePath, intensityDecimal, overlaidImagePath, width, height, overlayText, fontPath, fontSize);
-                setTimeout(() => {
-                    fs.unlinkSync(overlaidImagePath);
-                }, 1000);
+                await changeOpacity(interaction, originalImagePath, intensityDecimal, overlaidImagePath, width, height, overlayText, fontPath, fontSize);
 
                 await i.update({
                     files: [overlaidImagePath],
@@ -154,6 +172,9 @@ module.exports = async function handleInteraction(interaction) {
                 try {
                     if (fs.existsSync(originalImagePath)) {
                         fs.unlinkSync(originalImagePath);
+                    }
+                    if (fs.existsSync(overlaidImagePath)) {
+                        fs.unlinkSync(overlaidImagePath);
                     }
                     timerExpired = true;
                 } catch (cleanupError) {
@@ -168,6 +189,9 @@ module.exports = async function handleInteraction(interaction) {
                     try {
                         if (fs.existsSync(originalImagePath)) {
                             fs.unlinkSync(originalImagePath);
+                        }
+                        if (fs.existsSync(overlaidImagePath)) {
+                            fs.unlinkSync(overlaidImagePath);
                         }
                         collector.stop('timeout');
                         timerExpired = true;
@@ -184,6 +208,8 @@ module.exports = async function handleInteraction(interaction) {
             }
 
             startTimer();
+
+            ongoingInteractions.set(userId, { interaction, collector });
 
         } catch (error) {
             console.error('Error processing the image:', error);

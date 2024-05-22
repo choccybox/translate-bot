@@ -18,7 +18,6 @@ const serverSlash = require('./settings/serversettings.js');
 const userSlash = require('./settings/usersettings.js');
 
 const rioDeJaneiroSlash = require('./commands/slash commands/IMAGE/rioDeJaneiro.js');
-const rioDeJaneiroContext = require('./commands/context commands/IMAGE/rioDeJaneiro.js');
 
 const audioAnalyze = require('./commands/slash commands/AI/audioAnalyze.js');
 
@@ -146,8 +145,6 @@ client.on('interactionCreate', async (interaction) => {
         await ocrContext(interaction);
     } else if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'flagged') {
         await flaggedContext(interaction);
-    } else if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'rio de janeiro') {
-        await rioDeJaneiroContext(interaction);
     } else if (interaction.isCommand() && interaction.commandName === 'server') {
         await serverSlash(interaction);
     } else if (interaction.isCommand() && interaction.commandName === 'user') {

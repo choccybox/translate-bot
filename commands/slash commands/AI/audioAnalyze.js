@@ -169,8 +169,8 @@ module.exports = async function handleSlashCommand(interaction) {
                     ephemeral: true,
                 });
 
-                guildSettings[interaction.guild.id].members[interaction.user.id].AIuses = userAIuses - 1;
-                fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2));
+/*                 guildSettings[interaction.guild.id].members[interaction.user.id].AIuses = userAIuses - 1;
+                fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2)); */
             } else if (predictionRawText.length < 2000 && audioOutput === 'raw_only') {
                 console.log('raw text short, sending as a message');
                 interaction.editReply({
@@ -196,8 +196,8 @@ module.exports = async function handleSlashCommand(interaction) {
                     ephemeral: true,
                 });
 
-                guildSettings[interaction.guild.id].members[interaction.user.id].AIuses = userAIuses - 1;
-                fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2));
+/*                 guildSettings[interaction.guild.id].members[interaction.user.id].AIuses = userAIuses - 1;
+                fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2)); */
             } else if (predictionString.length + predictionRawText.length > 6000) {
                 console.log('segmented text too long, sending as a file');
                 fs.writeFileSync(`./temp/${randomName}.txt`, predictionRawText);
@@ -210,8 +210,8 @@ module.exports = async function handleSlashCommand(interaction) {
                     ephemeral: true,
                 });
 
-                guildSettings[interaction.guild.id].members[interaction.user.id].AIuses = userAIuses - 1;
-                fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2));
+/*                 guildSettings[interaction.guild.id].members[interaction.user.id].AIuses = userAIuses - 1;
+                fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2)); */
             } else {
                 console.log('segmented text short, sending as a message');
                 interaction.editReply({
@@ -224,8 +224,8 @@ module.exports = async function handleSlashCommand(interaction) {
                     ephemeral: true,
                 });
 
-                guildSettings[interaction.guild.id].members[interaction.user.id].AIuses = userAIuses - 1;
-                fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2));
+/*                 guildSettings[interaction.guild.id].members[interaction.user.id].AIuses = userAIuses - 1;
+                fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2)); */
             } 
         } catch (error) {
             console.error(error);

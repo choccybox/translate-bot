@@ -4,8 +4,12 @@ const axios = require('axios');
 const { ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
 const sharp = require('sharp');
 const TextToSVG = require('text-to-svg');
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+const ffmpeg = require('fluent-ffmpeg');
 
 dotenv.config();
+
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 module.exports = async function handleInteraction(interaction) {
     if (interaction.isCommand() && interaction.commandName === 'caption-top') {
@@ -15,9 +19,10 @@ module.exports = async function handleInteraction(interaction) {
         const randomName = Math.floor(Math.random() * 100000000);
         const originalImagePath = `temp/${randomName}-CAPTION.jpg`;
         const overlaidImagePath = `temp/${randomName}-CAPTION-OVERLAID.jpg`;
+        const gifPath = `temp/${randomName}-GIF.gif`;
         const overlayText = caption;
 
-        const MAX_FONT_SIZE = 60;
+        const MAX_FONT_SIZE = 100;
         const MIN_FONT_SIZE = 20;
 
         try {
@@ -27,10 +32,23 @@ module.exports = async function handleInteraction(interaction) {
             const [attachmentType, extension] = contentType.split('/');
 
             if (attachmentType === 'video') {
-                await interaction.followUp({
-                    embeds: [{ title: 'This command is not available for videos', color: 0xff0000 }],
+                await interaction.reply({
+                    embeds: [{ title: 'Processing video...', color: 0x00ff00 }],
                     ephemeral: true
                 });
+
+/*                 // Download video
+                const videoBuffer = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+                fs.writeFileSync(originalImagePath, videoBuffer.data);
+                console.log(`Downloaded video to ${originalImagePath}`);
+
+                // Convert video to GIF
+                await convertVideoToGif(originalImagePath, gifPath);
+                await interaction.followUp({ files: [gifPath] });
+
+                // Cleanup
+                fs.unlinkSync(originalImagePath);
+                fs.unlinkSync(gifPath); */
                 return;
             } else {
                 await interaction.deferReply({ ephemeral: true });
@@ -40,10 +58,9 @@ module.exports = async function handleInteraction(interaction) {
             fs.writeFileSync(originalImagePath, imageBuffer.data);
 
             const originalImageMetadata = await sharp(originalImagePath).metadata();
-
             const { width, height } = originalImageMetadata;
-
             const FONT_SIZE = Math.min(Math.max(width / 10, MIN_FONT_SIZE), MAX_FONT_SIZE);
+
             console.log('Font size:', FONT_SIZE);
 
             const maxCharsPerLine = Math.floor(width / (FONT_SIZE / 1.75));
@@ -66,6 +83,7 @@ module.exports = async function handleInteraction(interaction) {
                 }
             }
             lines.push(line.trim());
+
             console.log('Max characters per line:', maxCharsPerLine);
             console.log('Lines:', lines);
 
@@ -152,3 +170,20 @@ module.exports = async function handleInteraction(interaction) {
         }
     }
 };
+
+/* async function convertVideoToGif(inputPath, outputPath) {
+    return new Promise((resolve, reject) => {
+        ffmpeg(inputPath)
+            .outputOptions('-vf', 'fps=10,scale=320:-1:flags=lanczos')
+            .output(outputPath)
+            .on('end', () => {
+                console.log(`Video converted to GIF: ${outputPath}`);
+                resolve();
+            })
+            .on('error', (err) => {
+                console.error('Error converting video to GIF:', err);
+                reject(err);
+            })
+            .run();
+    });
+} */

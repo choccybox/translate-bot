@@ -17,7 +17,7 @@ module.exports = async function handleInteraction(interaction) {
         const overlaidImagePath = `temp/${randomName}-CAPTION-OVERLAID.jpg`;
         const overlayText = caption;
 
-        const MAX_FONT_SIZE = 60;
+        const MAX_FONT_SIZE = 100;
         const MIN_FONT_SIZE = 20;
 
         try {
@@ -26,18 +26,30 @@ module.exports = async function handleInteraction(interaction) {
             const contentType = image.contentType;
             const [attachmentType, extension] = contentType.split('/');
 
+            const imageBuffer = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+            fs.writeFileSync(originalImagePath, imageBuffer.data);
+
             if (attachmentType === 'video') {
-                await interaction.followUp({
+                await interaction.reply({
                     embeds: [{ title: 'This command is not available for videos', color: 0xff0000 }],
                     ephemeral: true
                 });
+
+                ffmpeg(originalImagePath)
+                    .fps(10)
+                    .output(`temp/${randomName}-GIF.gif`)
+                    .on('end', () => {
+                        console.log('GIF created');
+                    })
+                    .on('error', (error) => {
+                        console.error('Error creating GIF:', error);
+                    })
+                    .run();
+
                 return;
             } else {
                 await interaction.deferReply({ ephemeral: true });
             }
-
-            const imageBuffer = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-            fs.writeFileSync(originalImagePath, imageBuffer.data);
 
             const originalImageMetadata = await sharp(originalImagePath).metadata();
 
