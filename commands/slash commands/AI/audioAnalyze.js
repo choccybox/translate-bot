@@ -12,44 +12,27 @@ module.exports = async function handleSlashCommand(interaction) {
         const audioUrl = audioFile.url;
         const randomName = Math.random().toString(36).substring(7);
 
-        const guildSettings = JSON.parse(fs.readFileSync('./database/guilds.json', 'utf8'));
-
-        const userAIuses = guildSettings[interaction.guild.id].members[interaction.user.id].AIuses;
-
-        console.log(audioFile.contentType)
-
-        // check if attachment is an audio file (contenttype is audio/*)
-        if (userAIuses < 1) {
-            return interaction.reply({
-              embeds: [{
-                  title: 'AI uses depleted',
-                  description: 'you have ran out of uses for AI related commands\nAI uses reset each midnight, which is in **' + fs.readFileSync('./database/AIResetIn.txt', 'utf8') + '**',
-                  color: 0xFF0000
-              }],
-              ephemeral: true,
-              });
-        } else if (audioFile.contentType.startsWith('video/') && audioFile.contentType !== 'video/gif') {
+/*         if (audioFile.contentType.startsWith('video/') && audioFile.contentType !== 'video/gif') {
             const downloadVideo = await axios.get(audioUrl, { responseType: 'arraybuffer' });
             const videoData = downloadVideo.data;
             await fs.writeFileSync(`./temp/${randomName}.mp4`, videoData);
 
             // convert to audio
-            ffmpeg(`./temp/${randomName}.mp4`)
-                .input(`./temp/${randomName}.mp4`)
-                .audioCodec('libmp3lame')
-                .audioBitrate(128)
-                .format('mp3')
-                .on('end', async () => {
-                    console.log('Video converted to audio');
-                    const audioData = await fs.readFileSync(`./temp/${randomName}.mp3`);
-                    const base64Audio = `data:audio/mp3;base64,${audioData.toString('base64')}`;
-
-                    fs.unlinkSync(`./temp/${randomName}.mp4`);
-                })
-                .on('error', (err) => {
-                    console.error(err);
-                })
-                .save(`./temp/${randomName}.mp3`);
+            try {
+                var process = new ffmpeg(`./temp/${randomName}.mp4`);
+                process.then(function (video) {
+                    // Callback mode
+                    video.fnExtractSoundToMP3(`./temp/${randomName}.mp3`, function (error, file) {
+                        if (!error)
+                            console.log('Audio file: ' + file);
+                    });
+                }, function (err) {
+                    console.log('Error: ' + err);
+                });
+            } catch (e) {
+                console.log(e.code);
+                console.log(e.msg);
+            }
             
             interaction.reply({
                 content: 'The file you uploaded is a video file. It has been converted to an audio file.',
@@ -63,7 +46,30 @@ module.exports = async function handleSlashCommand(interaction) {
             });
         } else {
             await interaction.deferReply({ ephemeral: true });
+        } */
+
+        // if file is a video, convert it to audio
+        if (audioFile.contentType.startsWith('video/') && audioFile.contentType !== 'video/gif') {
+            const downloadVideo = await axios.get(audioUrl, { responseType: 'arraybuffer' });
+            const videoData = downloadVideo.data;
+            await fs.writeFileSync(`temp/${randomName}.mp4`, videoData);
+
+            const process = new ffmpeg(`temp/${randomName}.mp4`);
+            process.then(function (video) {
+                video.fnExtractSoundToMP3(`temp/${randomName}.mp3`, function (error, file) {
+                    if (!error) {
+                        console.log('Audio file:', file);
+                        // convert it to a base64 string, make sure to include the data type
+                        const audioData = fs.readFileSync(`temp/${randomName}.mp3`);
+                        const base64Audio = `data:audio/mp3;base64,${audioData.toString('base64')}`;
+                    }
+                });
+            }, function (err) {
+                console.log('Error:', err);
+            });
         }
+
+        interaction.deferReply({ ephemeral: true });
 
         const downloadAudio = await axios.get(audioUrl, { responseType: 'arraybuffer' });
         const audioData = downloadAudio.data;
@@ -75,7 +81,7 @@ module.exports = async function handleSlashCommand(interaction) {
         try {
             deepInfraPrediction = await axios.post('https://api.deepinfra.com/v1/inference/openai/whisper-large?version=9065fbc87cc7164fda86caa00cdeec40f846dbca', {
                 audio: base64Audio,
-                authorization: process.env.DEEPINFRA_API_KEY,
+                authorization: process.env.DEEPINFRA_TOKEN,
             });
             const runtimeDuration = deepInfraPrediction.data.inference_status.runtime_ms;
             console.log(`The prediction took ${runtimeDuration}ms to complete.`);
@@ -153,7 +159,7 @@ module.exports = async function handleSlashCommand(interaction) {
             // Conditional logic for handling different cases
             if (predictionRawText.length > 2000 && audioOutput === 'raw_only') {
                 console.log('raw text too long, sending as a file');
-                await fs.writeFile(`./temp/${randomName}.txt`, predictionRawText);
+                fs.writeFileSync(`./temp/${randomName}.txt`, predictionRawText);
                 interaction.editReply({
                     embeds: [{
                         title: 'output is too long to be displayed as a message, it has been compressed into a text file.',
@@ -194,7 +200,7 @@ module.exports = async function handleSlashCommand(interaction) {
                 fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2));
             } else if (predictionString.length + predictionRawText.length > 6000) {
                 console.log('segmented text too long, sending as a file');
-                await fs.writeFile(`./temp/${randomName}.txt`, predictionString);
+                fs.writeFileSync(`./temp/${randomName}.txt`, predictionRawText);
                 interaction.editReply({
                     embeds: [{
                         title: 'output is too long to be displayed as a message, it has been compressed into a text file.',
@@ -226,6 +232,11 @@ module.exports = async function handleSlashCommand(interaction) {
         } finally {
             // Delete the audio file after processing, and the text file if it was created
             await fs.unlinkSync(`./temp/${randomName}.mp3`);
+            if (fs.existsSync(`./temp/${randomName}.txt`)) {
+                await fs.unlinkSync(`./temp/${randomName}.txt`);
+            } else if (fs.existsSync(`./temp/${randomName}.mp4`)) {
+                await fs.unlinkSync(`./temp/${randomName}.mp4`);
+            }
         }
     }
 };
