@@ -1,15 +1,10 @@
 const dotenv = require('dotenv');
 const fs = require('fs');
 const axios = require('axios');
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPath = require('ffmpeg-static');
+const ffmpeg = require('ffmpeg');
 const { ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
-const ffprobePath = require('ffprobe-static').path;
 
 dotenv.config();
-
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
 
 let timer;
 let timerExpired = false;

@@ -4,9 +4,7 @@ import('node-fetch').then((fetch) => {
 
 const ocrWorker = require('./OCRWorker.js');
 
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPath = require('ffmpeg-static');
-ffmpeg.setFfmpegPath(ffmpegPath);
+const ffmpeg = require('ffmpeg');
 
 const fs = require('fs');
 const axios = require('axios');

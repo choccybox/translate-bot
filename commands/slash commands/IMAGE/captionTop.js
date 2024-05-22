@@ -1,18 +1,11 @@
 const dotenv = require('dotenv');
 const fs = require('fs');
 const axios = require('axios');
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPath = require('ffmpeg-static');
 const { ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
-const ffprobePath = require('ffprobe-static').path;
 const sharp = require('sharp');
-const path = require('path');
 const TextToSVG = require('text-to-svg');
 
 dotenv.config();
-
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
 
 module.exports = async function handleInteraction(interaction) {
     if (interaction.isCommand() && interaction.commandName === 'caption-top') {
@@ -46,23 +39,26 @@ module.exports = async function handleInteraction(interaction) {
             const imageBuffer = await axios.get(imageUrl, { responseType: 'arraybuffer' });
             fs.writeFileSync(originalImagePath, imageBuffer.data);
 
-            const originalImageMetadata = await new Promise((resolve, reject) => {
-                ffmpeg.ffprobe(originalImagePath, (err, metadata) => {
-                    if (err) reject(err);
-                    else resolve(metadata);
-                });
-            });
+            const originalImageMetadata = await sharp(originalImagePath).metadata();
 
-            const { width, height } = originalImageMetadata.streams[0];
+            const { width, height } = originalImageMetadata;
 
             const FONT_SIZE = Math.min(Math.max(width / 10, MIN_FONT_SIZE), MAX_FONT_SIZE);
             console.log('Font size:', FONT_SIZE);
 
-            const maxCharsPerLine = Math.floor(width / (FONT_SIZE / 2));
+            const maxCharsPerLine = Math.floor(width / (FONT_SIZE / 1.75));
             const lines = [];
             let line = '';
             for (const word of overlayText.split(' ')) {
-                if (line.length + word.length <= maxCharsPerLine) {
+                if (word.length > maxCharsPerLine) {
+                    let remainingWord = word;
+                    while (remainingWord.length > maxCharsPerLine) {
+                        const splitWord = remainingWord.slice(0, maxCharsPerLine);
+                        lines.push(splitWord.trim());
+                        remainingWord = remainingWord.slice(maxCharsPerLine);
+                    }
+                    line += remainingWord + ' ';
+                } else if (line.length + word.length <= maxCharsPerLine) {
                     line += word + ' ';
                 } else {
                     lines.push(line.trim());
@@ -86,21 +82,16 @@ module.exports = async function handleInteraction(interaction) {
 
                 await sharp(Buffer.from(lineNew)).toFile(`temp/line${i}.png`);
 
-                const imageMetadata = await new Promise((resolve, reject) => {
-                    ffmpeg.ffprobe(`temp/line${i}.png`, (err, metadata) => {
-                        if (err) reject(err);
-                        else resolve(metadata);
-                    });
-                });
+                const imageMetadata = await sharp(`temp/line${i}.png`).metadata();
 
                 console.log('original image width:', width);
-                console.log('imageMetadata width:', imageMetadata.streams[0].width);
-                console.log('imageMetadata height:', imageMetadata.streams[0].height);
+                console.log('imageMetadata width:', imageMetadata.width);
+                console.log('imageMetadata height:', imageMetadata.height);
 
-                const leftOffset = Math.round((width - imageMetadata.streams[0].width) / 2);
+                const leftOffset = Math.round((width - imageMetadata.width) / 2);
                 console.log('left offset:', leftOffset);
 
-                const boxHeight = imageMetadata.streams[0].height;
+                const boxHeight = Math.round(imageMetadata.height);
                 const boxWidth = width;
                 const totalBoxHeight = Math.round(boxHeight * (i + 1) + (boxHeight / 2));
                 console.log('total box height:', totalBoxHeight);
@@ -112,7 +103,8 @@ module.exports = async function handleInteraction(interaction) {
                         channels: 4,
                         background: { r: 255, g: 255, b: 255, alpha: 0 }
                     }
-                }).toFile(`temp/box${i}-white.png`);
+                })
+                .toFile(`temp/box${i}-white.png`);
 
                 await sharp(`temp/box${i}-white.png`)
                     .composite([{ input: `temp/line${i}.png`, top: 0, left: leftOffset }])
@@ -144,7 +136,7 @@ module.exports = async function handleInteraction(interaction) {
 
             await interaction.followUp({ files: [overlaidImagePath] });
             fs.unlinkSync(originalImagePath);
-            fs.unlinkSync(`temp/line0-composite.png`);
+            fs.unlinkSync(`temp/line${lines.length - 1}-composite.png`);
 
         } catch (error) {
             console.error('Error processing the image:', error);

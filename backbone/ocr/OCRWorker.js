@@ -6,8 +6,6 @@ const fs = require('fs');
 const axios = require('axios');
 
 const sharp = require('sharp');
-const ffmpeg = require('fluent-ffmpeg');
-const { default: ffmpegPath } = require('ffmpeg-static');
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -110,38 +108,17 @@ async function uploadToImbggAndOCR(imageOCR, randomName, OCRtype) {
     
     console.log(`Overlay image created at ${overlayPath}`);
 
-    // Use ffmpeg to apply the overlay onto the original image
-    const finalImagePath = `temp/${randomName}-${OCRtype}-OVERFIN.png`;
-    await new Promise((resolve, reject) => {
-        ffmpeg()
-            .input(imageOCR)
-            .input(overlayPath)
-            .complexFilter(['[0][1]overlay=0:0'])
-            .save(finalImagePath)
-            .on('end', () => {
-                console.log(`Overlay applied and saved to ${finalImagePath}`);
-                // Delete the overlay image
-                fs.unlink(overlayPath, (err) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        console.log(`Deleted overlay image: ${overlayPath}`);
-                        resolve();
-                    }
-                });
-                fs.unlink(imageOCR, (err) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        console.log(`Deleted original image: ${imageOCR}`);
-                        resolve();
-                    }
-                });
-            })
-            .on('error', (err) => {
-                reject(err);
-            });
-    });
+    // put overlay on the original image
+    const originalImagePath = imageOCR;
+    const finalImagePath = `temp/${randomName}-FINAL.png`;
+
+    // put the overlay at 0 0 coordinates on the original image
+    await sharp(originalImagePath)
+        .composite([
+            { input: overlayPath, top: 0, left: 0 }
+        ])
+        .toFile(finalImagePath);
+
 
     // upload the final image with overlay to imgbb
     const base64FinalImage = fs.readFileSync(finalImagePath, { encoding: 'base64' });
@@ -155,8 +132,11 @@ async function uploadToImbggAndOCR(imageOCR, randomName, OCRtype) {
     const imgbbOverlayURL = imgbbOverlayData.data.url;
     console.log(`Final image with overlay uploaded to: ${imgbbOverlayURL}`);
 
+    sharp.cache(false);
     // Delete the final image
     fs.unlinkSync(finalImagePath);
+    fs.unlinkSync(overlayPath);
+    fs.unlinkSync(imageOCR);
     console.log(`Deleted final image: ${finalImagePath}`);
 
     return [{ ocrText, imgbbOverlayURL, timeTook }];

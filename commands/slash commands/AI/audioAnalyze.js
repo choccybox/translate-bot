@@ -2,9 +2,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 const fs = require('fs');
 const axios = require('axios');
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPath = require('ffmpeg-static');
-const ffprobePath = require('ffprobe-static').path;
+const ffmpeg = require('ffmpeg');
 
 module.exports = async function handleSlashCommand(interaction) {
     if (interaction.isCommand() && interaction.commandName === 'audio-analyze') {

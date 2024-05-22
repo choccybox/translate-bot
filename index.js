@@ -251,60 +251,6 @@ function resetAIuses() {
   }
 }
 
-// Schedule the resetAIuses function to run daily at midnight
-const job = schedule.scheduleJob('0 0 * * *', resetAIuses); // Runs every day at midnight
-// first check if its midnight and then run the function
-if (new Date().getHours() === 0 && new Date().getMinutes() === 0) {
-  resetAIuses();
-} else {
-  const nextInvocation = job.nextInvocation();
-  const timeDifference = nextInvocation.getTime() - new Date().getTime();
-  const hours = Math.floor(timeDifference / (1000 * 60 * 60));
-  const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
-
-  let timeString = '';
-  if (hours > 0) {
-    timeString += `${hours} hour${hours > 1 ? 's' : ''}`;
-  }
-  if (hours > 0 && minutes > 0) {
-    timeString += ' ';
-  }
-  if (minutes > 0) {
-    timeString += `${minutes} minute${minutes > 1 ? 's' : ''}`;
-  }
-
-  console.log('resetAIuses will run in:', timeString);
-
-  // write to database AIResetIn.json
-  const airesetin = {
-    time: timeString
-  };
-  fs.writeFileSync(path.join(__dirname, 'database', 'AIResetIn.txt'), timeString);
-
-  // update file every minute
-  setInterval(() => {
-    const timeDifference = job.nextInvocation().getTime() - new Date().getTime();
-    const hours = Math.floor(timeDifference / (1000 * 60 * 60));
-    const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
-
-    let timeString = '';
-    if (hours > 0) {
-      timeString += `${hours} hour${hours > 1 ? 's' : ''}`;
-    }
-    if (hours > 0 && minutes > 0) {
-      timeString += ' ';
-    }
-    if (minutes > 0) {
-      timeString += `${minutes} minute${minutes > 1 ? 's' : ''}`;
-    }
-
-    const airesetin = {
-      time: timeString
-    };
-    fs.writeFileSync(path.join(__dirname, 'database', 'AIResetIn.txt'), timeString);
-  }, 60000);
-}
-
 function readGuildSettings() {
   try {
     const guildSettings = JSON.parse(fs.readFileSync('./database/guilds.json'));

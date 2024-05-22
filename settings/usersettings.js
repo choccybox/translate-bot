@@ -46,7 +46,7 @@ module.exports = async function handleSlashCommand(interaction) {
 
     // get member settings
     const userSettingsWrite = userSettings[guildID].members[userID];
-    const AIResetIn = fs.readFileSync('./database/AIresetIn.txt', 'utf8');
+    const AIResetIn = JSON.parse(fs.readFileSync('./database/guilds.json', 'utf8')).AIResetIn;
     
     const embedTitle = 'user settings for **@' + interaction.user.username + '**';
     const embedColor = 2829617;
@@ -83,10 +83,10 @@ module.exports = async function handleSlashCommand(interaction) {
                 value: hasSTARoleRenamed,
                 inline: true
                 },
-                {
+/*                 {
                 name: 'AI uses remaning',
                 value: userSettingsWrite.AIuses + ' uses, resets in **' + AIResetIn + '**',
-                }
+                } */
             ],
             color: embedColor
             }],
