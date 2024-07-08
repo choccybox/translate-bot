@@ -3,6 +3,21 @@ const fs = require('fs');
 const axios = require('axios');
 const { ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
 const sharp = require('sharp');
+const textToSVG = require('text-to-svg');
+
+const description = 'instagram type shit';
+const options = [
+    {
+        name: 'image',
+        description: 'your image',
+        required: true
+    },
+    {
+        name: 'intensity',
+        description: 'intensity of the filter, 2 is light, 8 is heavy, default is 5',
+        required: true,
+    }
+];
 
 dotenv.config();
 
@@ -26,7 +41,7 @@ function createButtonRow(currentIntensity) {
     );
 }
 
-async function changeOpacity(interaction, imagePath, intensityDecimal, overlaidImagePath, width, height, overlayText, fontPath, fontSize) {
+async function changeOpacity(interaction, imagePath, intensityDecimal, overlaidImagePath, width, height, overlayText, fontPath, fontSize, randomName) {
     // Resize the riodejaneiro image and change its opacity
     try {
         const data = await sharp('images/riodejaneiro.png')
@@ -44,22 +59,35 @@ async function changeOpacity(interaction, imagePath, intensityDecimal, overlaidI
             }])
             .toBuffer();
 
-        const textMeta = await sharp('images/rioDeJaneiroText.png').metadata();
-        const textWidth = textMeta.width;
-        const textHeight = textMeta.height;
+        // use textToSv to create the SVG text with appropriate size and position
+        const textToSVGOptions = {
+            x: 0,
+            y: 0,
+            fontSize,
+            anchor: 'top',
+            attributes: { fill: 'white' }
+        };
 
-        const left = Math.round((width - textWidth) / 2);
-        const top = Math.round((height - textHeight) / 2);
+        const textToSVGInstance = textToSVG.loadSync(fontPath);
+        const textSVG = textToSVGInstance.getSVG(overlayText, textToSVGOptions);
+
+        fs.writeFileSync(`temp/${randomName}.svg`, textSVG);
+
+        const textMetadata = await sharp(`temp/${randomName}.svg`).metadata();
+        const textWidth = textMetadata.width;
+        const textHeight = textMetadata.height;
+
+        const svgText = `<svg width="${textWidth}" height="${textHeight}">${textSVG}</svg>`;
 
         const finalOverlayData = await sharp(dataWithOpacity)
-            .composite([{ input: 'images/rioDeJaneiroText.png', top, left }])
+            .composite([{ input: Buffer.from(svgText), blend: 'over' }])
             .toBuffer();
 
         await sharp(imagePath)
             .composite([{ input: finalOverlayData, blend: 'over' }])
             .toFile(overlaidImagePath);
 
-        console.log(`Final image saved as: ${overlaidImagePath}`);
+        //console.log(`Final image saved as: ${overlaidImagePath}`);
         sharp.cache(false);
         return overlaidImagePath;
     } catch (error) {
@@ -70,10 +98,8 @@ async function changeOpacity(interaction, imagePath, intensityDecimal, overlaidI
 
 module.exports = async function handleInteraction(interaction) {
     if (interaction.isCommand() && interaction.commandName === 'riodejaneiro') {
-        console.log('using slash command');
         const intensity = interaction.options.getInteger('intensity');
         let intensityDecimal = intensity / 10 || 0.5;
-        console.log(intensityDecimal);
 
         if (intensityDecimal < 0.2 || intensityDecimal > 0.8) {
             return interaction.reply({
@@ -128,9 +154,9 @@ module.exports = async function handleInteraction(interaction) {
 
             const { width, height } = originalImageMetadata;
             const fontSize = Math.min(Math.floor(width * fontSizePercent), Math.floor(height * fontSizePercent));
-            console.log('Font size:', fontSize);
+            //console.log('Font size:', fontSize);
 
-            await changeOpacity(interaction, originalImagePath, intensityDecimal, overlaidImagePath, width, height, overlayText, fontPath, fontSize);
+            await changeOpacity(interaction, originalImagePath, intensityDecimal, overlaidImagePath, width, height, overlayText, fontPath, fontSize, randomName);
 
             if (fs.existsSync(overlaidImagePath)) {
                 await interaction.followUp({ files: [overlaidImagePath], components: [createButtonRow(intensityDecimal)] });
@@ -152,11 +178,11 @@ module.exports = async function handleInteraction(interaction) {
 
                 if (i.customId === 'intensity_down') {
                     intensityDecimal = Math.max(0.2, Math.round((intensityDecimal - 0.1) * 10) / 10);
-                    console.log(intensityDecimal);
+                    //console.log(intensityDecimal);
                     restartTimer();
                 } else if (i.customId === 'intensity_up') {
                     intensityDecimal = Math.min(0.8, Math.round((intensityDecimal + 0.1) * 10) / 10);
-                    console.log(intensityDecimal);
+                    //console.log(intensityDecimal);
                     restartTimer();
                 }
 
@@ -187,15 +213,18 @@ module.exports = async function handleInteraction(interaction) {
                 clearTimeout(timer);
                 timer = setTimeout(() => {
                     try {
-                        if (fs.existsSync(originalImagePath)) {
-                            fs.unlinkSync(originalImagePath);
-                        }
-                        if (fs.existsSync(overlaidImagePath)) {
-                            fs.unlinkSync(overlaidImagePath);
-                        }
+                        const tempDirectory = 'temp/';
+                        const files = fs.readdirSync(tempDirectory);
+                        const filesToDelete = files.filter(file => file.includes(randomName));
+                        
+                        filesToDelete.forEach(file => {
+                            const filePath = `${tempDirectory}${file}`;
+                            fs.unlinkSync(filePath);
+                        });
+                        
                         collector.stop('timeout');
                         timerExpired = true;
-                        console.log('Timer expired');
+                        //console.log('Timer expired');
                     } catch (cleanupError) {
                         console.error('Error cleaning up files:', cleanupError);
                     }
@@ -204,7 +233,7 @@ module.exports = async function handleInteraction(interaction) {
 
             function restartTimer() {
                 startTimer();
-                console.log('Timer restarted');
+                //console.log('Timer restarted');
             }
 
             startTimer();

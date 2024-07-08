@@ -4,29 +4,6 @@ const fs = require('fs');
 const path = require('path');
 const schedule = require('node-schedule');
 
-const ocrContext = require('./commands/context commands/IMAGE/OCR.js');
-const flaggedContext = require('./commands/context commands/flag.js');
-const flaggedSlash = require('./commands/slash commands/TEXT/flag.js');
-
-const translateSlash = require('./commands/slash commands/TEXT/translate.js');
-const translateContext = require('./commands/context commands/TEXT/translate.js');
-
-const freakySlash = require('./commands/slash commands/TEXT/freaky.js');
-const freakyContext = require('./commands/context commands/TEXT/freaky.js');
-
-const serverSlash = require('./settings/serversettings.js');
-const userSlash = require('./settings/usersettings.js');
-
-const rioDeJaneiroSlash = require('./commands/slash commands/IMAGE/rioDeJaneiro.js');
-
-const audioAnalyze = require('./commands/slash commands/AI/audioAnalyze.js');
-
-const summarizeUser = require('./commands/slash commands/AI/summarizeUser.js');
-const summarizeChannel = require('./commands/slash commands/AI/summarizeChannel.js');
-
-const captionTop = require('./commands/slash commands/IMAGE/captionTop.js');
-const captionBottom = require('./commands/slash commands/IMAGE/captionBottom.js');
-
 const client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
@@ -40,7 +17,7 @@ const client = new Client({
 });
 
 const commandsData = [
-  new ContextMenuCommandBuilder()
+/*   new ContextMenuCommandBuilder()
   .setName('translate text')
   .setType(ApplicationCommandType.Message),
 
@@ -58,15 +35,7 @@ const commandsData = [
 
   new ContextMenuCommandBuilder()
   .setName('freaky text')
-  .setType(ApplicationCommandType.Message),
-
-  new SlashCommandBuilder()
-  .setName('server')
-  .setDescription('modify server settings'),
-
-  new SlashCommandBuilder()
-  .setName('user')
-  .setDescription('modify user settings'),
+  .setType(ApplicationCommandType.Message), */
 
   new SlashCommandBuilder()
   .setName('freaky')
@@ -95,16 +64,18 @@ const commandsData = [
   .addIntegerOption(option => option.setName('intensity').setDescription('intensity of the filter, 2 is light, 8 is heavy, default is 5')),
 
   new SlashCommandBuilder()
-  .setName('caption-top')
-  .setDescription('adds a caption on the top of an image')
+  .setName('caption')
+  .setDescription('adds a caption to an image')
   .addAttachmentOption(option => option.setName('image').setDescription('your image').setRequired(true))
-  .addStringOption(option => option.setName('caption').setDescription('your caption').setRequired(true)),
-
-  new SlashCommandBuilder()
-  .setName('caption-bottom')
-  .setDescription('adds a caption on the bottom of an image')
-  .addAttachmentOption(option => option.setName('image').setDescription('your image').setRequired(true))
-  .addStringOption(option => option.setName('caption').setDescription('your caption').setRequired(true)),
+  .addStringOption(option => option.setName('caption').setDescription('your caption').setRequired(true))
+  .addStringOption(option => 
+    option.setName('position')
+    .setDescription('position of the caption')
+    .setRequired(false)
+    .addChoices(
+      { name: 'Top', value: 'top' },
+      { name: 'Bottom', value: 'bottom' }
+    )),
 
   new SlashCommandBuilder()
   .setName('audio-analyze')
@@ -117,8 +88,7 @@ const commandsData = [
       .addChoices(
         { name: 'segmented', value: 'segments_only' },
         { name: 'pure text', value: 'raw_only' },
-      )
-      .setRequired(true)),
+      )),
 
   new SlashCommandBuilder()
   .setName('summarize-user')
@@ -128,49 +98,114 @@ const commandsData = [
       .setDescription('user to summarize')
       .setRequired(true)),
 
-/*   new SlashCommandBuilder()
-  .setName('summarize-channel')
-  .setDescription('AI - uses Llama v3 text model to generate a summary of last 100 messages in a channel')
-  .addChannelOption(option =>
-    option.setName('channel')
-      .setDescription('channel to summarize')
-      .setRequired(true)), */
+  new SlashCommandBuilder()
+  .setName('togif')
+  .setDescription('converts an video to gif')
+  .addAttachmentOption(option => option.setName('video').setDescription('video to convert').setRequired(true)),
 ];
 
+function getAllCommandsFromFolders() {
+  const contextCommandsDir = './commands/context commands';
+  const slashCommandsDir = './commands/slash commands';
+  const ignoreList = ['rioDeJaneiro', 'toGif']; // ignore these commands when writing to .json
+
+  // get all files and subfolders and their files
+  const contextCommands = getAllCommandsFromFoldersHelper(contextCommandsDir);
+  const slashCommands = getAllCommandsFromFoldersHelper(slashCommandsDir);
+
+  // get all files in the subfolders
+  const contextCommandFiles = contextCommands.map(file => path.basename(file));
+  const slashCommandFiles = slashCommands.map(file => path.basename(file));
+
+  // write to a json file
+  const commandsJson = {
+    contextCommands: {
+      normal: contextCommandFiles.map(file => file.replace('.js', '')),
+      lowercase: convertNamesToLowerCase(contextCommandFiles.map(file => file.replace('.js', '')))
+    },
+    slashCommands: {
+      normal: slashCommandFiles.map(file => file.replace('.js', '')),
+      lowercase: convertNamesToLowerCaseAndRename(slashCommandFiles.map(file => file.replace('.js', '')))
+    }
+  };
+
+  fs.writeFileSync('defaults/commands.json', JSON.stringify(commandsJson, null, 2));
+
+  // import the commands
+  contextCommands.forEach(command => {
+    const commandName = path.basename(command, '.js').toLowerCase();
+    global[commandName + "Context"] = require(command);
+    //console.log('adding:', commandName + "Context")
+    //console.log('path:', command)
+  });
+
+  slashCommands.forEach(command => {
+    const commandName = path.basename(command, '.js').toLowerCase();
+    global[commandName + "Slash"] = require(command);
+    //console.log('adding:', commandName + "Slash")
+    //console.log('path:', command)
+  });
+
+  function getAllCommandsFromFoldersHelper(dir) {
+    const files = [];
+    const dirents = fs.readdirSync(dir, { withFileTypes: true });
+  
+    for (const dirent of dirents) {
+      const res = path.resolve(dir, dirent.name);
+      if (dirent.isDirectory()) {
+        files.push(...getAllCommandsFromFoldersHelper(res));
+      } else {
+        files.push(res);
+      }
+    }
+  
+    return files;
+  }
+
+  function convertNamesToLowerCase(files) {
+    return files.map(file => file.toLowerCase());
+  }
+
+  function convertNamesToLowerCaseAndRename(files) {
+    return files.map(file => {
+      if (ignoreList.includes(file)) {
+        return file.toLowerCase();
+      }
+      return file.replace(/([A-Z])/g, '-$1').toLowerCase();
+    });
+  }
+}
+
 client.on('interactionCreate', async (interaction) => {
-    // get what context menu reaction it was and use the appropriate function
-    if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'translate text') {
-        await translateContext(interaction);
-    } else if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'OCR') {
-        await ocrContext(interaction);
-    } else if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'flagged') {
-        await flaggedContext(interaction);
-    } else if (interaction.isCommand() && interaction.commandName === 'server') {
-        await serverSlash(interaction);
-    } else if (interaction.isCommand() && interaction.commandName === 'user') {
-        await userSlash(interaction)
-    } else if (interaction.isCommand() && interaction.commandName === 'freaky') {
-        await freakySlash(interaction);
-    } else if (interaction.isCommand() && interaction.commandName === 'translate') {
-        await translateSlash(interaction);
-    } else if (interaction.isCommand() && interaction.commandName === 'flag') {
-        await flaggedSlash(interaction);
-    } else if (interaction.isCommand() && interaction.commandName === 'riodejaneiro') {
-        await rioDeJaneiroSlash(interaction);
-    } else if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'freaky text') {
-        await freakyContext(interaction);
-    } else if (interaction.isCommand() && interaction.commandName === 'help') {
-        await interaction.reply({ files: ['images/hellna.png'], ephemeral: true});
-    } else if (interaction.isCommand() && interaction.commandName === 'audio-analyze') {
-        await audioAnalyze(interaction);
-    } else if (interaction.isCommand() && interaction.commandName === 'summarize-user') {
-        await summarizeUser(interaction);
-    } /* else if (interaction.isCommand() && interaction.commandName === 'summarize-channel') {
-        await summarizeChannel(interaction);
-    } */ else if (interaction.isCommand() && interaction.commandName === 'caption-top') {
-        await captionTop(interaction);
-    } else if (interaction.isCommand() && interaction.commandName === 'caption-bottom') {
-        await captionBottom(interaction);
+    const commandsJson = JSON.parse(fs.readFileSync('defaults/commands.json'));
+    // only read the lowercase commands
+    const contextCommands = commandsJson.contextCommands.lowercase;
+    const slashCommands = commandsJson.slashCommands.lowercase;
+
+    //console.log('contextCommands:', contextCommands);
+    //console.log('slashCommands:', slashCommands);
+
+    // determine if the command is a context command or a slash command
+    if (interaction.isMessageContextMenuCommand()) {
+      const commandName = interaction.commandName;
+      if (contextCommands.includes(commandName)) {
+        const contextCommand = global[commandName + "Context"];
+        if (typeof contextCommand === 'function') {
+          await contextCommand(interaction);
+        } else {
+          console.log(`Context command ${commandName} is not a function`);
+        }
+      }
+    } else if (interaction.isCommand()) {
+      const commandName = interaction.commandName;
+      if (slashCommands.includes(commandName)) {
+        const slashCommand = global[commandName + "Slash"];
+        if (typeof slashCommand === 'function') {
+          await slashCommand(interaction);
+        } else {
+          console.log(`Slash command ${commandName} is not a function`);
+        }
+      }
     }
 });
 
@@ -178,6 +213,7 @@ const rest = new REST().setToken(process.env.TOKEN);
 
 async function registerCommands() {
   try {
+    getAllCommandsFromFolders();
     console.log('Started refreshing application commands.');
 
     // Get existing global commands

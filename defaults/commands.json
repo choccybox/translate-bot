@@ -1,0 +1,40 @@
+{
+  "contextCommands": {
+    "normal": [
+      "flag",
+      "OCR",
+      "freaky",
+      "translate"
+    ],
+    "lowercase": [
+      "flag",
+      "ocr",
+      "freaky",
+      "translate"
+    ]
+  },
+  "slashCommands": {
+    "normal": [
+      "audioAnalyze",
+      "summarizeChannel",
+      "summarizeUser",
+      "caption",
+      "rioDeJaneiro",
+      "toGif",
+      "flag",
+      "freaky",
+      "translate"
+    ],
+    "lowercase": [
+      "audio-analyze",
+      "summarize-channel",
+      "summarize-user",
+      "caption",
+      "riodejaneiro",
+      "togif",
+      "flag",
+      "freaky",
+      "translate"
+    ]
+  }
+}
