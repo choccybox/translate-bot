@@ -2,7 +2,6 @@ const { Client, GatewayIntentBits, ContextMenuCommandBuilder, SlashCommandBuilde
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
-const schedule = require('node-schedule');
 
 const client = new Client({
     intents: [
@@ -17,25 +16,9 @@ const client = new Client({
 });
 
 const commandsData = [
-/*   new ContextMenuCommandBuilder()
-  .setName('translate text')
-  .setType(ApplicationCommandType.Message),
-
   new ContextMenuCommandBuilder()
-  .setName('OCR')
-  .setType(ApplicationCommandType.Message),
-
-  new ContextMenuCommandBuilder()
-  .setName('flagged')
-  .setType(ApplicationCommandType.Message),
-
-  new ContextMenuCommandBuilder()
-  .setName('rio de janeiro')
-  .setType(ApplicationCommandType.Message),
-
-  new ContextMenuCommandBuilder()
-  .setName('freaky text')
-  .setType(ApplicationCommandType.Message), */
+	.setName('riodejaneiro')
+	.setType(ApplicationCommandType.Message),
 
   new SlashCommandBuilder()
   .setName('freaky')
@@ -44,18 +27,16 @@ const commandsData = [
   .addBooleanOption(option => option.setName('disable-emojis').setDescription('disable 👅💦 emojis').setRequired(false)),
 
   new SlashCommandBuilder()
+  .setName('imagegeneration')
+  .setDescription('generate an image from a text')
+  .addStringOption(option => option.setName('image-prompt').setDescription('text to generate an image from').setRequired(true))
+  .addIntegerOption(option => option.setName('num-images').setDescription('amount of images (1-4)').setRequired(false))
+  .addStringOption(option => option.setName('guidance').setDescription('guidance (how closely to follow the prompt) for the AI (1-25)').setRequired(false)),
+
+  new SlashCommandBuilder()
   .setName('translate')
   .setDescription('translate a message to a specific language')
   .addStringOption(option => option.setName('text').setDescription('text to translate').setRequired(true)),
-
-  new SlashCommandBuilder()
-  .setName('help')
-  .setDescription('get help with the bot'),
-
-  new SlashCommandBuilder()
-  .setName('flagged')
-  .setDescription(`YOU'RE🇺🇸NOT🇺🇸IMMUNE🇺🇸TO🇺🇸THE🇺🇸PROPAGANDA!`)
-  .addStringOption(option => option.setName('text').setDescription('put🇺🇸your🇺🇸text🇺🇸here').setRequired(true)),
 
   new SlashCommandBuilder()
   .setName('riodejaneiro')
@@ -78,7 +59,7 @@ const commandsData = [
     )),
 
   new SlashCommandBuilder()
-  .setName('audio-analyze')
+  .setName('audioanalyze')
   .setDescription('AI - uses OpenAI Whisper audio model to transcribe audio to text')
   .addAttachmentOption(option => option.setName('audio').setDescription('audio file').setRequired(true))
   .addStringOption(option =>
@@ -89,19 +70,6 @@ const commandsData = [
         { name: 'segmented', value: 'segments_only' },
         { name: 'pure text', value: 'raw_only' },
       )),
-
-  new SlashCommandBuilder()
-  .setName('summarize-user')
-  .setDescription('AI - uses Llama v3 text model to generate a summary of user\'s last 100 messages')
-  .addUserOption(option =>
-    option.setName('user')
-      .setDescription('user to summarize')
-      .setRequired(true)),
-
-  new SlashCommandBuilder()
-  .setName('togif')
-  .setDescription('converts an video to gif')
-  .addAttachmentOption(option => option.setName('video').setDescription('video to convert').setRequired(true)),
 ];
 
 function getAllCommandsFromFolders() {
@@ -135,15 +103,15 @@ function getAllCommandsFromFolders() {
   contextCommands.forEach(command => {
     const commandName = path.basename(command, '.js').toLowerCase();
     global[commandName + "Context"] = require(command);
-    //console.log('adding:', commandName + "Context")
-    //console.log('path:', command)
+    console.log('adding:', commandName + "Context")
+    console.log('path:', command)
   });
 
   slashCommands.forEach(command => {
     const commandName = path.basename(command, '.js').toLowerCase();
     global[commandName + "Slash"] = require(command);
-    //console.log('adding:', commandName + "Slash")
-    //console.log('path:', command)
+    console.log('adding:', commandName + "Slash")
+    console.log('path:', command)
   });
 
   function getAllCommandsFromFoldersHelper(dir) {
@@ -171,7 +139,7 @@ function getAllCommandsFromFolders() {
       if (ignoreList.includes(file)) {
         return file.toLowerCase();
       }
-      return file.replace(/([A-Z])/g, '-$1').toLowerCase();
+      return file.replace(/([A-Z])/g, '$1').toLowerCase();
     });
   }
 }
@@ -252,35 +220,6 @@ async function registerCommands() {
     console.log('Successfully reloaded global commands.');
   } catch (error) {
     console.error('Error refreshing global commands:', error);
-  }
-}
-
-function resetAIuses() {
-  try {
-      // Load the guilds.json file
-      const guildsData = fs.readFileSync(path.join(__dirname, 'database', 'guilds.json'), 'utf8');
-      const guilds = JSON.parse(guildsData);
-
-      // Iterate through each guild
-      for (const guildId in guilds) {
-          const guild = guilds[guildId];
-          
-          // Iterate through each member in the guild
-          for (const memberId in guild.members) {
-              const member = guild.members[memberId];
-              
-              if (member.AIuses < 10) {
-                  // Reset the user's AIuses
-                  member.AIuses = 10;
-              }
-          }
-      }
-
-      // Save the updated guilds.json file
-      fs.writeFileSync(path.join(__dirname, 'database', 'guilds.json'), JSON.stringify(guilds, null, 2));
-      console.log('AIuses have been reset.');
-  } catch (error) {
-      console.error('Error reading or writing guilds.json file:', error);
   }
 }
 

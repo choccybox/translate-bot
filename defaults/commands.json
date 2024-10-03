@@ -1,14 +1,14 @@
 {
   "contextCommands": {
     "normal": [
-      "flag",
       "OCR",
+      "rioDeJaneiro",
       "freaky",
       "translate"
     ],
     "lowercase": [
-      "flag",
       "ocr",
+      "riodejaneiro",
       "freaky",
       "translate"
     ]
@@ -16,23 +16,17 @@
   "slashCommands": {
     "normal": [
       "audioAnalyze",
-      "summarizeChannel",
-      "summarizeUser",
+      "imageGeneration",
       "caption",
       "rioDeJaneiro",
-      "toGif",
-      "flag",
       "freaky",
       "translate"
     ],
     "lowercase": [
-      "audio-analyze",
-      "summarize-channel",
-      "summarize-user",
+      "audioanalyze",
+      "imagegeneration",
       "caption",
       "riodejaneiro",
-      "togif",
-      "flag",
       "freaky",
       "translate"
     ]

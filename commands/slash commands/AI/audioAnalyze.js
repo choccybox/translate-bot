@@ -4,49 +4,15 @@ const fs = require('fs');
 const axios = require('axios');
 const ffmpeg = require('ffmpeg');
 
-module.exports = async function handleSlashCommand(interaction) {
-    if (interaction.isCommand() && interaction.commandName === 'audio-analyze') {
+module.exports = async function handleInteraction(interaction) {
+    if (interaction.isCommand() && interaction.commandName === 'audioanalyze') {
         const audioFile = interaction.options.getAttachment('audio');
         const audioOutput = interaction.options.getString('output');
 
+        interaction.deferReply({ ephemeral: true });
+
         const audioUrl = audioFile.url;
         const randomName = Math.random().toString(36).substring(7);
-
-/*         if (audioFile.contentType.startsWith('video/') && audioFile.contentType !== 'video/gif') {
-            const downloadVideo = await axios.get(audioUrl, { responseType: 'arraybuffer' });
-            const videoData = downloadVideo.data;
-            await fs.writeFileSync(`./temp/${randomName}.mp4`, videoData);
-
-            // convert to audio
-            try {
-                var process = new ffmpeg(`./temp/${randomName}.mp4`);
-                process.then(function (video) {
-                    // Callback mode
-                    video.fnExtractSoundToMP3(`./temp/${randomName}.mp3`, function (error, file) {
-                        if (!error)
-                            console.log('Audio file: ' + file);
-                    });
-                }, function (err) {
-                    console.log('Error: ' + err);
-                });
-            } catch (e) {
-                console.log(e.code);
-                console.log(e.msg);
-            }
-            
-            interaction.reply({
-                content: 'The file you uploaded is a video file. It has been converted to an audio file.',
-                ephemeral: true,
-            });
-                
-        } else if (!audioFile.contentType.startsWith('audio/')) {
-            return interaction.reply({
-                content: 'The file you uploaded is not an audio file. Please upload an audio file.',
-                ephemeral: true,
-            });
-        } else {
-            await interaction.deferReply({ ephemeral: true });
-        } */
 
         // if file is a video, convert it to audio
         if (audioFile.contentType.startsWith('video/') && audioFile.contentType !== 'video/gif') {
@@ -69,8 +35,6 @@ module.exports = async function handleSlashCommand(interaction) {
             });
         }
 
-        interaction.deferReply({ ephemeral: true });
-
         const downloadAudio = await axios.get(audioUrl, { responseType: 'arraybuffer' });
         const audioData = downloadAudio.data;
         await fs.writeFileSync(`./temp/${randomName}.mp3`, audioData);
@@ -79,7 +43,7 @@ module.exports = async function handleSlashCommand(interaction) {
         const base64Audio = `data:audio/mp3;base64,${audioData.toString('base64')}`;
 
         try {
-            deepInfraPrediction = await axios.post('https://api.deepinfra.com/v1/inference/openai/whisper-large?version=9065fbc87cc7164fda86caa00cdeec40f846dbca', {
+            deepInfraPrediction = await axios.post('https://api.deepinfra.com/v1/inference/distil-whisper/distil-large-v3', {
                 audio: base64Audio,
                 authorization: process.env.DEEPINFRA_TOKEN,
             });
@@ -95,11 +59,12 @@ module.exports = async function handleSlashCommand(interaction) {
 
             let formattedDuration = '';
 
-            if (predictionHours > 0) {
-                formattedDuration = `${predictionHours.toString().padStart(2, '0')}:${predictionMinutes.toString().padStart(2, '0')}:${predictionSeconds.toString().padStart(2, '0')}s`;
+            if (predictionHours > 0 || predictionMinutes > 0) {
+                formattedDuration = `${predictionMinutes.toString()}:${predictionSeconds.toString().padStart(2, '0')}s`;
             } else {
-                formattedDuration = `${predictionMinutes.toString().padStart(2, '0')}:${predictionSeconds.toString().padStart(2, '0')}s`;
+                formattedDuration = `${predictionSeconds.toString()}s`;
             }
+            
 
             console.log(`The prediction took ${formattedDuration} to complete.`);
             const segments = deepInfraPrediction.data.segments;
@@ -174,7 +139,7 @@ module.exports = async function handleSlashCommand(interaction) {
             } else if (predictionRawText.length < 2000 && audioOutput === 'raw_only') {
                 console.log('raw text short, sending as a message');
                 interaction.editReply({
-                    content: predictionRawText,
+                    content: predictionRawText + `\n\n *-# model took ***${formattedDuration}*** to generate your request*`,
                     ephemeral: true,
                 });
             } else if (predictionString.length > 1000 && predictionString.length < 6000) {
@@ -188,7 +153,7 @@ module.exports = async function handleSlashCommand(interaction) {
                 });
                 interaction.editReply({
                     embeds: [{
-                        title: audioFile.name.replace(/\*/g, ''),
+                        title: audioFile.name.replace(/[_*`]/g, '\\$&'),
                         fields: fields,
                         footer: { text: `model took ${formattedDuration} to generate your request` },
                         color: 2829617,
@@ -216,7 +181,7 @@ module.exports = async function handleSlashCommand(interaction) {
                 console.log('segmented text short, sending as a message');
                 interaction.editReply({
                     embeds: [{
-                        title: audioFile.name,
+                        title: audioFile.name.replace(/[_*`]/g, '\\$&'),
                         description: predictionString,
                         footer: { text: `model took ${formattedDuration} to generate your request` },
                         color: 2829617,

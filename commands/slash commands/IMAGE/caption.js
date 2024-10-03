@@ -14,11 +14,11 @@ async function addCaption(imageBuffer, caption, position, originalImagePath, ove
 
     const originalImageMetadata = await sharp(originalImagePath).metadata();
     const { width, height } = originalImageMetadata;
-    const FONT_SIZE = Math.min(Math.max(width / 10, MIN_FONT_SIZE));
+    const FONT_SIZE = Math.ceil(Math.min(Math.max(width / 10, MIN_FONT_SIZE)));
 
     console.log('Font size:', FONT_SIZE);
 
-    const maxCharsPerLine = Math.floor(width / (FONT_SIZE / 1.75));
+    const maxCharsPerLine = Math.floor(width / (FONT_SIZE / 2));
     const lines = [];
     let line = '';
     for (const word of caption.split(' ')) {
@@ -79,7 +79,7 @@ async function addCaption(imageBuffer, caption, position, originalImagePath, ove
         .toFile(`temp/box${i}-white.png`);
 
         await sharp(`temp/box${i}-white.png`)
-            .composite([{ input: `temp/line${i}.png`, top: 0, left: leftOffset }])
+            .composite([{ input: `temp/line${i}.png`, top: 5, left: leftOffset }])
             .toFile(`temp/line${i}-composite.png`);
 
         sharp.cache(false);

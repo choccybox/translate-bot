@@ -83,7 +83,7 @@ async function changeOpacity(interaction, imagePath, intensityDecimal, overlaidI
 }
 
 module.exports = async function handleInteraction(interaction) {
-    if (interaction.isCommand() && interaction.commandName === 'riodejaneiro') {
+    if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'riodejaneiro') {
         const intensity = interaction.options.getInteger('intensity');
         let intensityDecimal = intensity / 10 || 0.5;
 
@@ -112,15 +112,14 @@ module.exports = async function handleInteraction(interaction) {
         const originalImagePath = `temp/${randomName}-RIO.png`;
         const overlaidImagePath = `temp/${randomName}-RIO-OVERLAID.png`;
         const overlayText = 'Rio De Janeiro';
-        const minTextSize = 20;
+        const minTextSize = 35;
         const fontPath = 'fonts/InstagramSans.ttf'; // Path to your custom font file
         const fontSizePercent = 0.075; // Set the font size as a percentage of the image width and height
 
         try {
-            const targetMessage = interaction.options.getAttachment('image');
-            const imageUrl = targetMessage.url;
-            const contentType = targetMessage.contentType;
-            const [attachmentType, extension] = contentType.split('/');
+            const targetMessage = interaction.targetMessage;
+            const imageUrl = targetMessage.attachments.first().url;
+            const attachmentType = targetMessage.attachments.first().contentType.split('/')[0];
 
             if (attachmentType === 'video') {
                 await interaction.followUp({
