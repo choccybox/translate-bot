@@ -112,7 +112,7 @@ module.exports = async function handleInteraction(interaction) {
         const originalImagePath = `temp/${randomName}-RIO.png`;
         const overlaidImagePath = `temp/${randomName}-RIO-OVERLAID.png`;
         const overlayText = 'Rio De Janeiro';
-        const minTextSize = 35;
+        const minTextSize = 20;
         const fontPath = 'fonts/InstagramSans.ttf'; // Path to your custom font file
         const fontSizePercent = 0.075; // Set the font size as a percentage of the image width and height
 
