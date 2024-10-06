@@ -20,6 +20,19 @@ const commandsData = [
 	.setName('riodejaneiro')
 	.setType(ApplicationCommandType.Message),
 
+  new ContextMenuCommandBuilder()
+	.setName('audioanalyze')
+	.setType(ApplicationCommandType.Message),
+
+  new ContextMenuCommandBuilder()
+  .setName('stake')
+  .setType(ApplicationCommandType.Message),
+
+  new SlashCommandBuilder()
+  .setName('stake')
+  .setDescription('adds stake logo to the right bottom corner of the video')
+  .addAttachmentOption(option => option.setName('file').setDescription('any image/video format').setRequired(true)),
+
   new SlashCommandBuilder()
   .setName('freaky')
   .setDescription('make text 𝓯𝓻𝓮𝓪𝓴𝔂👅💦')
@@ -32,11 +45,6 @@ const commandsData = [
   .addStringOption(option => option.setName('image-prompt').setDescription('text to generate an image from').setRequired(true))
   .addIntegerOption(option => option.setName('num-images').setDescription('amount of images (1-4)').setRequired(false))
   .addStringOption(option => option.setName('guidance').setDescription('guidance (how closely to follow the prompt) for the AI (1-25)').setRequired(false)),
-
-  new SlashCommandBuilder()
-  .setName('translate')
-  .setDescription('translate a message to a specific language')
-  .addStringOption(option => option.setName('text').setDescription('text to translate').setRequired(true)),
 
   new SlashCommandBuilder()
   .setName('riodejaneiro')
@@ -75,7 +83,7 @@ const commandsData = [
 function getAllCommandsFromFolders() {
   const contextCommandsDir = './commands/context commands';
   const slashCommandsDir = './commands/slash commands';
-  const ignoreList = ['rioDeJaneiro', 'toGif']; // ignore these commands when writing to .json
+  const ignoreList = ['rioDeJaneiro']; // ignore these commands when writing to .json
 
   // get all files and subfolders and their files
   const contextCommands = getAllCommandsFromFoldersHelper(contextCommandsDir);
@@ -150,9 +158,6 @@ client.on('interactionCreate', async (interaction) => {
     const contextCommands = commandsJson.contextCommands.lowercase;
     const slashCommands = commandsJson.slashCommands.lowercase;
 
-    //console.log('contextCommands:', contextCommands);
-    //console.log('slashCommands:', slashCommands);
-
     // determine if the command is a context command or a slash command
     if (interaction.isMessageContextMenuCommand()) {
       const commandName = interaction.commandName;
@@ -176,8 +181,6 @@ client.on('interactionCreate', async (interaction) => {
       }
     }
 });
-
-const rest = new REST().setToken(process.env.TOKEN);
 
 async function registerCommands() {
   try {
@@ -223,142 +226,22 @@ async function registerCommands() {
   }
 }
 
-function readGuildSettings() {
-  try {
-    const guildSettings = JSON.parse(fs.readFileSync('./database/guilds.json'));
-    return guildSettings;
-  } catch (error) {
-    console.error('Error reading guild settings:', error);
-    return {};
-  }
-}
+const rest = new REST().setToken(process.env.TOKEN);
 
-function saveGuildSettings(guildSettings) {
-  try {
-    fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2));
-  } catch (error) {
-    console.error('Error saving guild settings:', error);
-  }
-}
-
-async function updateGuildNames() {
-  const guildSettings = readGuildSettings();
-
-  for (const guild of client.guilds.cache.values()) {
-    const guildID = guild.id;
-    const guildName = guild.name;
-
-    if (!guildSettings[guildID]) {
-      guildSettings[guildID] = JSON.parse(fs.readFileSync('./defaults/guildSettingDefaults.json'));
-    }
-
-    guildSettings[guildID].name = guildName; // Update the guild name
-
-    try {
-      const owner = await guild.fetchOwner();
-      guildSettings[guildID].owner = owner.id; // Update the owner ID
-      guildSettings[guildID].ownerName = owner.user.username; // Update the owner name
-    } catch (error) {
-      console.error(`Error fetching owner for guild ${guildID}:`, error);
-      guildSettings[guildID].owner = null;
-      guildSettings[guildID].ownerName = null;
-    }
-  }
-
-  saveGuildSettings(guildSettings);
-}
-
-function updateUserSetting() {
-  const guildSettings = readGuildSettings();
-
-  client.guilds.cache.forEach(async guild => {
-    guild.members.cache.forEach(async member => {
-      const userID = member.user.id;
-
-      if (guildSettings[guild.id] && guildSettings[guild.id].members[userID]) {
-        const userSettings = guildSettings[guild.id].members[userID];
-
-        const defaultSettings = JSON.parse(fs.readFileSync('./defaults/userSettingDefaults.json'));
-
-        if (userSettings.managed) {
-          userSettings.managed = member.permissions.has('Administrator') || member.permissions.has('ManageGuild');
-        }
-
-        userSettings.name = member.user.username;
-
-        Object.keys(userSettings).forEach(key => {
-          if (defaultSettings[key] === undefined) {
-            delete userSettings[key];
-          }
-        });
-
-        Object.keys(defaultSettings).forEach(key => {
-          if (userSettings[key] === undefined) {
-            userSettings[key] = defaultSettings[key];
-          }
-        });
-
-        guildSettings[guild.id].members[userID] = userSettings;
-      }
-    });
-
-    saveGuildSettings(guildSettings);
-  });
-}
-
-function clearTemp() {
-  fs.rmSync('./temp', { recursive: true, force: true });
-  fs.mkdirSync('./temp');
-}
 
 client.once('ready', async () => {
-  await clearTemp();
+  // clear temp
+  fs.rmSync('./temp', { recursive: true, force: true });
+  fs.mkdirSync('./temp');
+
+  // register commands
   await registerCommands();
   console.log(`wake yo ass up bc it's time to go beast mode`);
-
-  const guildSettings = readGuildSettings();
-
-  client.guilds.cache.forEach(guild => {
-    const guildID = guild.id;
-    if (!guildSettings[guildID]) {
-      guildSettings[guildID] = JSON.parse(fs.readFileSync('./defaults/guildSettingDefaults.json'));
-      saveGuildSettings(guildSettings);
-    }
-  });
-
-  await updateGuildNames(); // Update the guild names
-  updateUserSetting(); // Update user settings
 });
 
 client.on('guildCreate', async (guild) => {
   console.log(`Joined a new guild: ${guild.name}`);
   await registerCommands();
-
-  // Check if guild is already registered
-  const guildSettings = readGuildSettings();
-  if (guildSettings[guild.id]) {
-    console.log('Guild is already registered.');
-    return;
-  }
-
-  // Read guildSettingDefaults.json
-  const defaultSettings = JSON.parse(fs.readFileSync('./defaults/guildSettingDefaults.json'));
-
-  // Update the default settings with guild-specific information
-  defaultSettings[guild.id].name = guild.name;
-  defaultSettings[guild.id].owner = guild.ownerId;
-
-  try {
-    const owner = await guild.fetchOwner();
-    defaultSettings[guild.id].ownerName = owner.user.username;
-  } catch (error) {
-    console.error(`Error fetching owner for guild ${guild.id}:`, error);
-    defaultSettings[guild.id].ownerName = null;
-  }
-
-  // Save the updated guild settings
-  guildSettings[guild.id] = defaultSettings;
-  saveGuildSettings(guildSettings);
 });
 
 client.login(process.env.TOKEN);

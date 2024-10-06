@@ -138,11 +138,8 @@ module.exports = async function handleInteraction(interaction) {
             const originalImageMetadata = await sharp(originalImagePath).metadata();
 
             const { width, height } = originalImageMetadata;
-            const fontSize = Math.min(Math.floor(width * fontSizePercent), Math.floor(height * fontSizePercent));
-            //console.log('Font size:', fontSize);
-
+            let fontSize = Math.min(Math.floor(width * fontSizePercent), Math.floor(height * fontSizePercent));
             if (fontSize < minTextSize) {
-                // set the font size to the minimum size
                 fontSize = minTextSize;
             }
 

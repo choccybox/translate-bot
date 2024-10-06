@@ -5,8 +5,8 @@ const axios = require('axios');
 const ffmpeg = require('ffmpeg');
 
 module.exports = async function handleInteraction(interaction) {
-    if (interaction.isCommand() && interaction.commandName === 'audioanalyze') {
-        const audioFile = interaction.options.getAttachment('audio');
+    if (interaction.isMessageContextMenuCommand() && interaction.commandName === 'audioanalyze') {
+        const audioFile = interaction.targetMessage.attachments.first();
         const audioOutput = interaction.options.getString('output');
 
         interaction.deferReply({ ephemeral: true });
@@ -133,6 +133,9 @@ module.exports = async function handleInteraction(interaction) {
                     files: [`./temp/${randomName}.txt`],
                     ephemeral: true,
                 });
+
+/*                 guildSettings[interaction.guild.id].members[interaction.user.id].AIuses = userAIuses - 1;
+                fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2)); */
             } else if (predictionRawText.length < 2000 && audioOutput === 'raw_only') {
                 console.log('raw text short, sending as a message');
                 interaction.editReply({
@@ -158,6 +161,8 @@ module.exports = async function handleInteraction(interaction) {
                     ephemeral: true,
                 });
 
+/*                 guildSettings[interaction.guild.id].members[interaction.user.id].AIuses = userAIuses - 1;
+                fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2)); */
             } else if (predictionString.length + predictionRawText.length > 6000) {
                 console.log('segmented text too long, sending as a file');
                 fs.writeFileSync(`./temp/${randomName}.txt`, predictionRawText);
@@ -170,6 +175,8 @@ module.exports = async function handleInteraction(interaction) {
                     ephemeral: true,
                 });
 
+/*                 guildSettings[interaction.guild.id].members[interaction.user.id].AIuses = userAIuses - 1;
+                fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2)); */
             } else {
                 console.log('segmented text short, sending as a message');
                 interaction.editReply({
@@ -181,6 +188,9 @@ module.exports = async function handleInteraction(interaction) {
                     }],
                     ephemeral: true,
                 });
+
+/*                 guildSettings[interaction.guild.id].members[interaction.user.id].AIuses = userAIuses - 1;
+                fs.writeFileSync('./database/guilds.json', JSON.stringify(guildSettings, null, 2)); */
             } 
         } catch (error) {
             console.error(error);
