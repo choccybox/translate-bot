@@ -1,7 +1,8 @@
+const altnames = ['caption', 'cap', 'text', 'txt'];
+const isChainable = true;
 const dotenv = require('dotenv');
 const fs = require('fs');
 const axios = require('axios');
-const { ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
 const sharp = require('sharp');
 const TextToSVG = require('text-to-svg');
 
@@ -116,21 +117,22 @@ async function addCaption(imageBuffer, caption, position, originalImagePath, ove
     images.forEach(image => fs.unlinkSync(image));
 }
 
-module.exports = async function handleInteraction(interaction) {
-    if (interaction.isCommand() && interaction.commandName === 'caption') {
-        const caption = interaction.options.getString('caption');
-        const position = interaction.options.getString('position') ?? 'top';
+module.exports = {
+    run: async function handleMessage(message, client, currentAttachments, isChained, userID) {
 
-        const attchmentExtension = interaction.options.getAttachment('image').contentType.split('/')[1];
-        console.log('attchmentExtension:', attchmentExtension);
-        console.log('position:', position);
+        const attachment = currentAttachments.first() || message.attachments.first();
+        if (!attachment) {
+            return message.reply({ content: 'Please provide an audio or video file to process.' });
+        }
 
-        const randomName = Math.floor(Math.random() * 100000000);
+        console.log('Processing Attachment:', attachment);
+
+        const randomName = userID;
         const originalImagePath = `temp/${randomName}-CAPTION.jpg`;
         const overlaidImagePath = `temp/${randomName}-CAPTION-OVERLAID.jpg`;
 
         try {
-            const image = interaction.options.getAttachment('image');
+            const image = await axios.get(attachment.url);
             const imageUrl = image.url;
             const contentType = image.contentType;
             const [attachmentType, extension] = contentType.split('/');
@@ -150,18 +152,11 @@ module.exports = async function handleInteraction(interaction) {
             await addCaption(imageBuffer.data, caption, position, originalImagePath, overlaidImagePath);
 
             await interaction.followUp({ files: [overlaidImagePath] });
-            fs.unlinkSync(originalImagePath);
 
         } catch (error) {
             console.error('Error processing the image:', error);
             if (!interaction.deferred) {
                 await interaction.followUp('There was an error processing the image. Please try again later.');
-            }
-        } finally {
-            try {
-                fs.unlinkSync(overlaidImagePath);
-            } catch (error) {
-                console.error('Error deleting files:', error);
             }
         }
     }

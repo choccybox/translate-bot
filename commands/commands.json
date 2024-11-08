@@ -1,0 +1,70 @@
+{
+  "audio": {
+    "file": "audioAnalyze.js",
+    "isChainable": false
+  },
+  "aa": {
+    "file": "audioAnalyze.js",
+    "isChainable": false
+  },
+  "audioanalyze": {
+    "file": "audioAnalyze.js",
+    "isChainable": false
+  },
+  "speech2text": {
+    "file": "audioAnalyze.js",
+    "isChainable": false
+  },
+  "s2t": {
+    "file": "audioAnalyze.js",
+    "isChainable": false
+  },
+  "stt": {
+    "file": "audioAnalyze.js",
+    "isChainable": false
+  },
+  "caption": {
+    "file": "caption.js",
+    "isChainable": true
+  },
+  "cap": {
+    "file": "caption.js",
+    "isChainable": true
+  },
+  "text": {
+    "file": "caption.js",
+    "isChainable": true
+  },
+  "txt": {
+    "file": "caption.js",
+    "isChainable": true
+  },
+  "rj": {
+    "file": "riodejaneiro.js",
+    "isChainable": true
+  },
+  "rio": {
+    "file": "riodejaneiro.js",
+    "isChainable": true
+  },
+  "riodejaneiro": {
+    "file": "riodejaneiro.js",
+    "isChainable": true
+  },
+  "rjd": {
+    "file": "riodejaneiro.js",
+    "isChainable": true
+  },
+  "rdj": {
+    "file": "riodejaneiro.js",
+    "isChainable": true
+  },
+  "stake": {
+    "file": "stake.js",
+    "isChainable": true
+  },
+  "stk": {
+    "file": "stake.js",
+    "isChainable": true
+  }
+}

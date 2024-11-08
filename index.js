@@ -1,247 +1,161 @@
-const { Client, GatewayIntentBits, ContextMenuCommandBuilder, SlashCommandBuilder, ApplicationCommandType, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const express = require('express');
+const index = express();
+const PORT = process.env.PORT || 3001;
+
+index.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
+// Serve static files from the "public" directory
+index.use('/images', express.static(path.join(__dirname, 'userMakes')));
 
 const client = new Client({
-    intents: [
-      GatewayIntentBits.Guilds,
-      GatewayIntentBits.GuildMessages,
-      GatewayIntentBits.GuildMembers,
-      GatewayIntentBits.MessageContent,
-      GatewayIntentBits.GuildPresences,
-      GatewayIntentBits.GuildMessageReactions,
-    ],
-    fetchAllMembers: true
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildPresences,
+    GatewayIntentBits.GuildMessageReactions,
+  ],
+  fetchAllMembers: true
 });
 
-const commandsData = [
-  new ContextMenuCommandBuilder()
-	.setName('riodejaneiro')
-	.setType(ApplicationCommandType.Message),
+const commandsList = require('./commands/commands.json');
+const getUnchainableCommands = () => {
+  return Object.keys(commandsList).filter(command => !commandsList[command].isChainable);
+};
+console.log('Unchainable commands:', getUnchainableCommands());
+const unchainableCommands = getUnchainableCommands();
 
-  new ContextMenuCommandBuilder()
-	.setName('audioanalyze')
-	.setType(ApplicationCommandType.Message),
-
-  new ContextMenuCommandBuilder()
-  .setName('stake')
-  .setType(ApplicationCommandType.Message),
-
-  new SlashCommandBuilder()
-  .setName('stake')
-  .setDescription('adds stake logo to the right bottom corner of the video')
-  .addAttachmentOption(option => option.setName('file').setDescription('any image/video format').setRequired(true)),
-
-  new SlashCommandBuilder()
-  .setName('freaky')
-  .setDescription('make text 𝓯𝓻𝓮𝓪𝓴𝔂👅💦')
-  .addStringOption(option => option.setName('text').setDescription('text to make 𝓯𝓻𝓮𝓪𝓴𝔂👅💦').setRequired(true))
-  .addBooleanOption(option => option.setName('disable-emojis').setDescription('disable 👅💦 emojis').setRequired(false)),
-
-  new SlashCommandBuilder()
-  .setName('imagegeneration')
-  .setDescription('generate an image from a text')
-  .addStringOption(option => option.setName('image-prompt').setDescription('text to generate an image from').setRequired(true))
-  .addIntegerOption(option => option.setName('num-images').setDescription('amount of images (1-4)').setRequired(false))
-  .addStringOption(option => option.setName('guidance').setDescription('guidance (how closely to follow the prompt) for the AI (1-25)').setRequired(false)),
-
-  new SlashCommandBuilder()
-  .setName('riodejaneiro')
-  .setDescription('instagram type shit')
-  .addAttachmentOption(option => option.setName('image').setDescription('your image').setRequired(true))
-  .addIntegerOption(option => option.setName('intensity').setDescription('intensity of the filter, 2 is light, 8 is heavy, default is 5')),
-
-  new SlashCommandBuilder()
-  .setName('caption')
-  .setDescription('adds a caption to an image')
-  .addAttachmentOption(option => option.setName('image').setDescription('your image').setRequired(true))
-  .addStringOption(option => option.setName('caption').setDescription('your caption').setRequired(true))
-  .addStringOption(option => 
-    option.setName('position')
-    .setDescription('position of the caption')
-    .setRequired(false)
-    .addChoices(
-      { name: 'Top', value: 'top' },
-      { name: 'Bottom', value: 'bottom' }
-    )),
-
-  new SlashCommandBuilder()
-  .setName('audioanalyze')
-  .setDescription('AI - uses OpenAI Whisper audio model to transcribe audio to text')
-  .addAttachmentOption(option => option.setName('audio').setDescription('audio file').setRequired(true))
-  .addStringOption(option =>
-    option.setName('output')
-      .setDescription('what kind of an output do you need')
-      .setRequired(true)
-      .addChoices(
-        { name: 'segmented', value: 'segments_only' },
-        { name: 'pure text', value: 'raw_only' },
-      )),
-];
-
-function getAllCommandsFromFolders() {
-  const contextCommandsDir = './commands/context commands';
-  const slashCommandsDir = './commands/slash commands';
-  const ignoreList = ['rioDeJaneiro']; // ignore these commands when writing to .json
-
-  // get all files and subfolders and their files
-  const contextCommands = getAllCommandsFromFoldersHelper(contextCommandsDir);
-  const slashCommands = getAllCommandsFromFoldersHelper(slashCommandsDir);
-
-  // get all files in the subfolders
-  const contextCommandFiles = contextCommands.map(file => path.basename(file));
-  const slashCommandFiles = slashCommands.map(file => path.basename(file));
-
-  // write to a json file
-  const commandsJson = {
-    contextCommands: {
-      normal: contextCommandFiles.map(file => file.replace('.js', '')),
-      lowercase: convertNamesToLowerCase(contextCommandFiles.map(file => file.replace('.js', '')))
-    },
-    slashCommands: {
-      normal: slashCommandFiles.map(file => file.replace('.js', '')),
-      lowercase: convertNamesToLowerCaseAndRename(slashCommandFiles.map(file => file.replace('.js', '')))
-    }
-  };
-
-  fs.writeFileSync('defaults/commands.json', JSON.stringify(commandsJson, null, 2));
-
-  // import the commands
-  contextCommands.forEach(command => {
-    const commandName = path.basename(command, '.js').toLowerCase();
-    global[commandName + "Context"] = require(command);
-    console.log('adding:', commandName + "Context")
-    console.log('path:', command)
-  });
-
-  slashCommands.forEach(command => {
-    const commandName = path.basename(command, '.js').toLowerCase();
-    global[commandName + "Slash"] = require(command);
-    console.log('adding:', commandName + "Slash")
-    console.log('path:', command)
-  });
-
-  function getAllCommandsFromFoldersHelper(dir) {
-    const files = [];
-    const dirents = fs.readdirSync(dir, { withFileTypes: true });
-  
-    for (const dirent of dirents) {
-      const res = path.resolve(dir, dirent.name);
-      if (dirent.isDirectory()) {
-        files.push(...getAllCommandsFromFoldersHelper(res));
-      } else {
-        files.push(res);
+client.on('messageCreate', async (message) => {
+  if (message.mentions.has(client.user)) {
+      const messageWords = message.content.split(/[\s,]+/);
+      const commandWords = messageWords.filter(word => commandsList[word.split(':')[0]]);
+      const uniqueCommands = [...new Set(commandWords.map(word => word.split(':')[0]))];
+      const userID = message.author.id;
+      // create a folder in userMakes with the user id (if it doesn't exist)
+      if (!fs.existsSync(`./userMakes/${userID}`)) {
+          fs.mkdirSync(`./userMakes/${userID}`);
       }
-    }
-  
-    return files;
+
+      let currentAttachments = message.attachments.size > 0 ? message.attachments : null;
+
+      if (!currentAttachments && message.reference) {
+          const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
+          currentAttachments = repliedMessage.attachments.size > 0 ? repliedMessage.attachments : null;
+      }
+
+      if (!currentAttachments) {
+          return message.reply({ content: 'I need an audio file, idiot.' });
+      }
+
+      if (uniqueCommands.length > 1) {
+          const foundNoChainCommand = uniqueCommands.find(command => unchainableCommands.includes(command));
+          if (foundNoChainCommand) {
+              return message.reply({ content: `You cannot chain the command \`${foundNoChainCommand}\` with other commands.` });
+          }
+      }
+
+      let isChained = false;
+      console.log('isChained index:', isChained);
+
+      for (const commandName of uniqueCommands) {
+          console.log(`Command name: ${commandName}`);
+          const commandInfo = commandsList[commandName];
+
+          if (!commandInfo) {
+              console.log(`Command ${commandName} not found in commands list.`);
+              continue;
+          }
+
+          try {
+              const commandFile = require(path.join(__dirname, 'commands', commandInfo.file));
+              console.log(`Executing command: ${commandName}`);
+
+              const result = await commandFile.run(message, client, currentAttachments, isChained, userID);
+
+              if (!unchainableCommands.includes(commandName)) {
+                  if (result && result.attachments && result.attachments.length > 0) {
+                      const uploadedMessage = await message.reply({
+                          files: [result.attachments[0]],
+                      });
+                      console.log(`Uploaded attachment: ${result.attachments[0]}`);
+
+                      currentAttachments = new Collection();
+                      currentAttachments.set(uploadedMessage.attachments.first().id, uploadedMessage.attachments.first());
+                      console.log(`Current Attachments updated with new attachment: ${uploadedMessage.attachments.first().url}`);
+                  } else {
+                      console.log(`Command ${commandName} did not produce an attachment. Stopping process.`);
+                      return message.reply({ content: `something fucked up` });
+                  }
+              } else {
+                  console.log(`Command ${commandName} is in noChainList, so no attachment check needed.`);
+                  if (!result) {
+                      const replyMessage = await message.reply({ content: `working on ${commandName}` });
+                      setTimeout(async () => {
+                        await replyMessage.edit({ content: `finished ${commandName}` }).catch(console.error);
+                      }, 500);
+                      return;
+                  }
+              }
+          } catch (error) {
+              console.error(`Error executing command ${commandName}:`, error);
+              return message.reply({ content: `An error occurred while processing the command ${commandName}.` });
+          }
+
+          isChained = true;
+          console.log('isChained index:', isChained);
+      }
+
+      const files = fs.readdirSync('./temp');
+      files.forEach(file => {
+          if (file.startsWith(userID)) {
+              fs.unlinkSync(`./temp/${file}`);
+          }
+      });
   }
-
-  function convertNamesToLowerCase(files) {
-    return files.map(file => file.toLowerCase());
-  }
-
-  function convertNamesToLowerCaseAndRename(files) {
-    return files.map(file => {
-      if (ignoreList.includes(file)) {
-        return file.toLowerCase();
-      }
-      return file.replace(/([A-Z])/g, '$1').toLowerCase();
-    });
-  }
-}
-
-client.on('interactionCreate', async (interaction) => {
-    const commandsJson = JSON.parse(fs.readFileSync('defaults/commands.json'));
-    // only read the lowercase commands
-    const contextCommands = commandsJson.contextCommands.lowercase;
-    const slashCommands = commandsJson.slashCommands.lowercase;
-
-    // determine if the command is a context command or a slash command
-    if (interaction.isMessageContextMenuCommand()) {
-      const commandName = interaction.commandName;
-      if (contextCommands.includes(commandName)) {
-        const contextCommand = global[commandName + "Context"];
-        if (typeof contextCommand === 'function') {
-          await contextCommand(interaction);
-        } else {
-          console.log(`Context command ${commandName} is not a function`);
-        }
-      }
-    } else if (interaction.isCommand()) {
-      const commandName = interaction.commandName;
-      if (slashCommands.includes(commandName)) {
-        const slashCommand = global[commandName + "Slash"];
-        if (typeof slashCommand === 'function') {
-          await slashCommand(interaction);
-        } else {
-          console.log(`Slash command ${commandName} is not a function`);
-        }
-      }
-    }
 });
 
-async function registerCommands() {
-  try {
-    getAllCommandsFromFolders();
-    console.log('Started refreshing application commands.');
+// Read all .js files in commands folder, log them, and get their first line of code altnames and write those as available commands into a .json file
+const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+const commands = {};
 
-    // Get existing global commands
-    const existingGlobalCommands = await rest.get(
-      Routes.applicationCommands(process.env.CLIENT_ID),
-    );
+commandFiles.forEach(file => {
+  console.log(`Found command file: ${file}`);
+  const filePath = path.join(__dirname, 'commands', file);
+  const fileContent = fs.readFileSync(filePath, 'utf-8');
+  const firstLine = fileContent.split('\n')[0];
+  const secondLine = fileContent.split('\n')[1];
+  const altnameMatch = firstLine.match(/const altnames = \[(.*)\]/);
+  const isChainableMatch = secondLine.match(/const isChainable = (true|false)/);
+  console.log(`First line: ${firstLine}`);
+  console.log(`Second line: ${secondLine}`);
 
-    // Remove global commands that are not present in commandsData
-    const commandsToRemove = existingGlobalCommands.filter(command => {
-      return !commandsData.some(newCommand => newCommand.name === command.name);
+  if (altnameMatch) {
+    const altnames = altnameMatch[1].split(',').map(name => name.trim().replace(/'/g, '')) || [];
+    const isChainable = isChainableMatch ? isChainableMatch[1] === 'true' : false;
+    
+    altnames.forEach(altname => {
+      commands[altname] = {
+        file: file,
+        isChainable: isChainable
+      };
     });
-
-    // Remove global commands that are not present in commandsData
-    if (commandsToRemove.length > 0) {
-      await Promise.all(commandsToRemove.map(command => {
-        return rest.delete(
-          Routes.applicationCommand(process.env.CLIENT_ID, command.id),
-        );
-      }));
-
-      console.log('Successfully removed global commands:', commandsToRemove.map(command => command.name));
-    }
-
-    // Register new commands
-    const registeredGlobalCommands = await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID),
-      { body: commandsData },
-    );
-
-    // Log the added global commands
-    console.log('Added global commands:');
-    registeredGlobalCommands.forEach(command => {
-      console.log(`Command Name: ${command.name} | Command ID: ${command.id} | Command Type: ${command.type}`);
-    });
-
-    console.log('Successfully reloaded global commands.');
-  } catch (error) {
-    console.error('Error refreshing global commands:', error);
   }
-}
+});
 
-const rest = new REST().setToken(process.env.TOKEN);
-
+// Write the commands to a .json file
+fs.writeFileSync('./commands/commands.json', JSON.stringify(commands, null, 2));
 
 client.once('ready', async () => {
   // clear temp
   fs.rmSync('./temp', { recursive: true, force: true });
   fs.mkdirSync('./temp');
-
-  // register commands
-  await registerCommands();
   console.log(`wake yo ass up bc it's time to go beast mode`);
-});
-
-client.on('guildCreate', async (guild) => {
-  console.log(`Joined a new guild: ${guild.name}`);
-  await registerCommands();
 });
 
 client.login(process.env.TOKEN);
