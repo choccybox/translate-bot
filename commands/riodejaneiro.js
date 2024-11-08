@@ -5,6 +5,7 @@ const axios = require('axios');
 const sharp = require('sharp');
 const textToSVG = require('text-to-svg');
 const path = require('path');
+const dotenv = require('dotenv').config();
 
 // Function to change the opacity of the image and overlay text
 async function changeOpacity(interaction, imagePath, intensityDecimal, overlaidImagePath, width, height, overlayText, fontPath, minTextSize, randomName, fontSize, userID) {
@@ -96,9 +97,9 @@ module.exports = {
             // Call function to change opacity and overlay text
             const finalImage = await changeOpacity(message, originalImagePath, intensityDecimal, overlaidImagePath, width, height, overlayText, fontPath, minTextSize, fontSize, userID);
             await finalImage; // Ensure the final image processing is complete
-            const imageURL = 'https://translate-bot-production.up.railway.app/makes/' + userName + '/' + userName + '-RIO-OVERLAID.png';
+            const imageURL = process.env.UPLOADURL + userName + '/' + userName + '-RIO-OVERLAID.png';
             console.log('Final Image:', imageURL);
-            return { message: imageURL };
+            return imageURL;
             
         } catch (error) {
             console.error('Error processing the image:', error);

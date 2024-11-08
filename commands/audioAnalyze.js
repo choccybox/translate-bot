@@ -12,16 +12,13 @@ module.exports = {
         if (!attachment) {
             return message.reply({ content: 'Please provide an audio or video file to process.' });
         }
-
-        console.log('Processing Attachment:', attachment);
-
         const fileUrl = attachment.url;
         const randomName = userID;
         const contentType = attachment.contentType.split('/')[1];
 
         const downloadFile = await axios.get(fileUrl, { responseType: 'arraybuffer' });
         const fileData = downloadFile.data;
-        await fs.writeFileSync(`temp/${randomName}.${contentType}`, fileData);
+        await fs.writeFileSync(`userMakes/${randomName}/${randomName}.${contentType}`, fileData);
 
         console.log('Downloaded File:', `${randomName}.${contentType}`);
 
@@ -30,13 +27,13 @@ module.exports = {
             if (!attachment.contentType.startsWith('audio/') && !attachment.contentType.startsWith('video/')) {
                 message.reply({ content: 'this aint an audio/video file' });
             } else if (attachment.contentType.startsWith('video/') && attachment.contentType !== 'video/gif') {
-                const process = new ffmpeg(`temp/${randomName}.${contentType}`);
+                const process = new ffmpeg(`userMakes/${randomName}/${randomName}.${contentType}`);
                 process.then(function (video) {
-                    video.fnExtractSoundToMP3(`temp/${randomName}.mp3`, function (error, file) {
+                    video.fnExtractSoundToMP3(`userMakes/${randomName}/${randomName}.mp3`, function (error, file) {
                         if (!error) {
                             console.log('Audio file:', file);
                             // convert it to a base64 string, make sure to include the data type
-                            const audioData = fs.readFileSync(`temp/${randomName}.mp3`);
+                            const audioData = fs.readFileSync(`userMakes/${randomName}/${randomName}.mp3`);
                             const base64Audio = `data:audio/mp3;base64,${audioData.toString('base64')}`;
                             processAudio(base64Audio, message, randomName, attachment.name);
                         }
@@ -45,7 +42,7 @@ module.exports = {
                     console.log('Error:', err);
                 });
             } else {
-                const audioData = fs.readFileSync(`temp/${randomName}.${contentType}`);
+                const audioData = fs.readFileSync(`userMakes/${randomName}/${randomName}.${contentType}`);
                 const base64Audio = `data:audio/${contentType};base64,${audioData.toString('base64')}`;
                 processAudio(base64Audio, message, randomName, attachment.name);
             }

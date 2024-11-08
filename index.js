@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const index = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 
 index.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
@@ -47,10 +47,8 @@ client.on('messageCreate', async (message) => {
       if (!currentAttachments && message.reference) {
           const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
           currentAttachments = repliedMessage.attachments.size > 0 ? repliedMessage.attachments : null;
-      }
-
-      if (!currentAttachments) {
-          return message.reply({ content: 'I need an audio file, idiot.' });
+      } else if (!currentAttachments) {
+        return message.reply({ content: 'I need a file, idiot.' });
       }
 
       if (uniqueCommands.length > 1) {
@@ -78,28 +76,20 @@ client.on('messageCreate', async (message) => {
 
               const result = await commandFile.run(message, client, currentAttachments, isChained, userID);
 
-              if (!unchainableCommands.includes(commandName)) {
-                  if (result && result.attachments && result.attachments.length > 0) {
-                      const uploadedMessage = await message.reply({
-                          files: [result.attachments[0]],
-                      });
-                      console.log(`Uploaded attachment: ${result.attachments[0]}`);
-
-                      currentAttachments = new Collection();
-                      currentAttachments.set(uploadedMessage.attachments.first().id, uploadedMessage.attachments.first());
-                      console.log(`Current Attachments updated with new attachment: ${uploadedMessage.attachments.first().url}`);
+                if (!unchainableCommands.includes(commandName)) {
+                  if (result) {
+                    await message.reply({ content: result }).catch(console.error);
                   } else {
-                      console.log(`Command ${commandName} did not produce an attachment. Stopping process.`);
-                      return message.reply({ content: `something fucked up` });
+                    console.log(`Command ${commandName} did not produce a result. Stopping process.`);
+                    return message.reply({ content: `something went wrong` }).catch(console.error);
                   }
               } else {
                   console.log(`Command ${commandName} is in noChainList, so no attachment check needed.`);
                   if (!result) {
-                      const replyMessage = await message.reply({ content: `working on ${commandName}` });
-                      setTimeout(async () => {
-                        await replyMessage.edit({ content: `finished ${commandName}` }).catch(console.error);
-                      }, 500);
-                      return;
+                      await message.reply({ content: `working on ${commandName}` }).catch(console.error);
+                  } else {
+                      console.log(`Command ${commandName} did not produce a result. Stopping process.`);
+                      return message.reply({ content: `something went wrong` }).catch(console.error);
                   }
               }
           } catch (error) {
