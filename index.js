@@ -40,7 +40,10 @@ client.on('messageCreate', async (message) => {
       const userID = message.author.id;
       // create a folder in userMakes with the user id (if it doesn't exist)
       if (!fs.existsSync(`userMakes/${userID}`)) {
+        console.log(`Creating folder for user ${userID}`);
           fs.mkdirSync(`userMakes/${userID}`);
+      } else {
+        console.log(`Folder for user ${userID} already exists`);
       }
 
       let currentAttachments = message.attachments.size > 0 ? message.attachments : null;
