@@ -25,6 +25,7 @@ const client = new Client({
 });
 
 const commandsList = require('./commands/commands.json');
+const { time } = require('console');
 const getUnchainableCommands = () => {
   return Object.keys(commandsList).filter(command => !commandsList[command].isChainable);
 };
@@ -86,7 +87,6 @@ client.on('messageCreate', async (message) => {
               } else {
                   console.log(`Command ${commandName} is in noChainList, so no attachment check needed.`);
                   if (!result) {
-                      await message.reply({ content: `working on ${commandName}` }).catch(console.error);
                   } else {
                       console.log(`Command ${commandName} did not produce a result. Stopping process.`);
                       return message.reply({ content: `something went wrong` }).catch(console.error);
@@ -100,13 +100,6 @@ client.on('messageCreate', async (message) => {
           isChained = true;
           console.log('isChained index:', isChained);
       }
-
-      const files = fs.readdirSync('./temp');
-      files.forEach(file => {
-          if (file.startsWith(userID)) {
-              fs.unlinkSync(`./temp/${file}`);
-          }
-      });
   }
 });
 

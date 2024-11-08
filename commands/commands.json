@@ -58,13 +58,5 @@
   "rdj": {
     "file": "riodejaneiro.js",
     "isChainable": true
-  },
-  "stake": {
-    "file": "stake.js",
-    "isChainable": true
-  },
-  "stk": {
-    "file": "stake.js",
-    "isChainable": true
   }
 }
