@@ -39,8 +39,8 @@ client.on('messageCreate', async (message) => {
       const uniqueCommands = [...new Set(commandWords.map(word => word.split(':')[0]))];
       const userID = message.author.id;
       // create a folder in userMakes with the user id (if it doesn't exist)
-      if (!fs.existsSync(`./userMakes/${userID}`)) {
-          fs.mkdirSync(`./userMakes/${userID}`);
+      if (!fs.existsSync(`userMakes/${userID}`)) {
+          fs.mkdirSync(`userMakes/${userID}`);
       }
 
       let currentAttachments = message.attachments.size > 0 ? message.attachments : null;
