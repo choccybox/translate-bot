@@ -10,7 +10,7 @@ index.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 // Serve static files from the "public" directory
-index.use('/images', express.static(path.join(__dirname, 'userMakes')));
+index.use('/images', express.static(path.join(__dirname, 'temp')));
 
 const client = new Client({
   intents: [
@@ -38,13 +38,6 @@ client.on('messageCreate', async (message) => {
       const commandWords = messageWords.filter(word => commandsList[word.split(':')[0]]);
       const uniqueCommands = [...new Set(commandWords.map(word => word.split(':')[0]))];
       const userID = message.author.id;
-      // create a folder in userMakes with the user id (if it doesn't exist)
-      if (!fs.existsSync(`userMakes/${userID}`)) {
-        console.log(`Creating folder for user ${userID}`);
-          fs.mkdirSync(`userMakes/${userID}`);
-      } else {
-        console.log(`Folder for user ${userID} already exists`);
-      }
 
       let currentAttachments = message.attachments.size > 0 ? message.attachments : null;
 
