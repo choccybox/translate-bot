@@ -10,7 +10,7 @@ index.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 // Serve static files from the "public" directory
-index.use('/images', express.static(path.join(__dirname, 'temp')));
+index.use('/images', express.static(path.join(__dirname, 'userMakes')));
 
 const client = new Client({
   intents: [

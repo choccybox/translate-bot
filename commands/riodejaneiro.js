@@ -5,32 +5,47 @@ const fs = require('fs');
 const axios = require('axios');
 const dotenv = require('dotenv').config();
 const sharp = require('sharp');
-
-const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
+const { generate } = require('text-to-image');
 
-async function overlayImageAndText(fontPath, originalImagePath, overlaidImagePath, intensityDecimal) {
+async function overlayImageAndText(width, height, fontSize, fontPath, originalImagePath, overlaidImagePath, opacity, userName) {
     try {
-        return new Promise((resolve, reject) => {
-            ffmpeg(originalImagePath)
-                .input(path.resolve(__dirname, 'images/riodejaneiro.png'))  // Correct path for overlay image
-                .output(overlaidImagePath)
-                .outputOptions([
-                    // Apply filter to overlay the image with opacity and then add text in the middle
-                    `-filter_complex`,
-                    `[0:v][1:v]overlay=(W-w)/2:(H-h)/2,drawtext=text='Rio De Janeiro':fontfile=${fontPath}:x=(w-text_w)/2:y=(h-text_h)/2:fontsize=30:fontcolor=white@1.0`
-                ])
-                .on('stderr', console.log) // Debug output for errors
-                .on('end', function() {
-                    console.log('Image processed:', overlaidImagePath);
-                    resolve(overlaidImagePath);
-                })
-                .on('error', function(err) {
-                    console.error('Error:', err);
-                    reject(err);
-                })
-                .run();
+        // Resize 'riodejaneiro.png' to match the specified width and height and set opacity
+        const overlayImage = await sharp(`images/riodejaneiro.png`)
+            .resize(width, height)
+            .ensureAlpha(opacity)
+            .toBuffer();
+
+        await sharp(originalImagePath)
+            .composite([{ input: overlayImage, blend: 'over' }])
+            .toFile(overlaidImagePath);
+
+         const dataUri = await generate('Rio De Janeiro', {
+            debug: true,
+            maxWidth: width,
+            customHeight: height,
+            fontSize: fontSize,
+            fontPath: fontPath,
+            fontFamily: 'InstagramSans',
+            lineHeight: fontSize,
+            bgColor: 'transparent',
+            textColor: 'white',
+            textAlign: 'center',
+            verticalAlign: 'center',
         });
+        console.log(dataUri);
+
+        // Save the text image as a file
+        const base64Data = dataUri.replace(/^data:image\/png;base64,/, '');
+        fs.writeFileSync(`temp/${userName}-RIO-TEXT.png`, base64Data, 'base64');
+
+        // Overlay the text image on top of the base image
+        const finalImagePath = `userMakes/${userName}-RIO-FINAL.png`;
+        const finalImage = await sharp(overlaidImagePath)
+            .composite([{ input: `temp/${userName}-RIO-TEXT.png`, gravity: 'center' }])
+            .toFile(finalImagePath);
+
+        return finalImage;
     } catch (error) {
         console.error('Error processing image:', error);
         throw error;
@@ -50,6 +65,8 @@ module.exports = {
             console.log('Intensity:', intensityDecimal);
         }
 
+        console.log(intensityDecimal);
+
         // Check for image in currentAttachments or message.attachments
         const image = currentAttachments.first() || message.attachments.first();
         if (!image) {
@@ -58,6 +75,9 @@ module.exports = {
         const imageUrl = image.url;
 
         try {
+            const userName = userID;
+            const opacity = intensityDecimal;
+
             // Download the base image
             const downloadImage = await axios.get(imageUrl, { responseType: 'arraybuffer' });
             const originalImagePath = `temp/${userName}-RIO.png`;
@@ -73,16 +93,25 @@ module.exports = {
             // Create overlayed image path
             const overlaidImagePath = `temp/${userName}-RIO-OVERLAID.png`;
 
-            // Call function to overlay image and text
-            await overlayImageAndText(width, height, fontPath, originalImagePath, overlaidImagePath, intensityDecimal);
+            // set the font size to 1/10th of the image entire size
+            const fontSize = Math.floor(Math.min(width, height) / 10);
+            console.log('Font Size:', fontSize);
 
-            const imageURL = process.env.UPLOADURL + userName + '/' + userName + '-RIO-OVERLAID.png';
+            // Call function to overlay image and text
+            await overlayImageAndText(width, height, fontSize, fontPath, originalImagePath, overlaidImagePath, opacity, userName);
+
+            const imageURL = process.env.UPLOADURL + userName + '-RIO-FINAL.png';
             console.log('Final Image:', imageURL);
             return imageURL;
 
         } catch (error) {
             console.error('Error processing the image:', error);
             return message.reply({ content: 'Error processing the image.' });
+        } finally {
+            // Clean up temp files
+            fs.unlinkSync(`temp/${userName}-RIO.png`);
+            fs.unlinkSync(`temp/${userName}-RIO-OVERLAID.png`);
+            fs.unlinkSync(`temp/${userName}-RIO-TEXT.png`);
         }
     }
 };
