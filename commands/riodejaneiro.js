@@ -44,7 +44,8 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalIm
         const finalImage = await sharp(overlaidImagePath)
             .composite([{ input: `temp/${userName}-RIO-TEXT.png`, gravity: 'center' }])
             .toFile(finalImagePath);
-
+        // turn off cache
+        sharp.cache(false);
         return finalImage;
     } catch (error) {
         console.error('Error processing image:', error);

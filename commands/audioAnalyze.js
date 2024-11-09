@@ -126,5 +126,9 @@ async function processAudio(base64Audio, message, randomName, fileName) {
         }
     } catch (error) {
         console.error(error);
+    } finally {
+        // Clean up temp files
+        fs.unlinkSync(`temp/${randomName}.mp3`);
+        fs.unlinkSync(`temp/${randomName}.${fileName.split('.')[1]}`);
     }
 }
