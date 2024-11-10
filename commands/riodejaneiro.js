@@ -40,7 +40,7 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalIm
         fs.writeFileSync(`temp/${userName}-RIO-TEXT.png`, base64Data, 'base64');
 
         // Overlay the text image on top of the base image
-        const finalImagePath = `userMakes/${userName}-RIO-FINAL.png`;
+        const finalImagePath = `temp/${userName}-RIO-FINAL.png`;
         const finalImage = await sharp(overlaidImagePath)
             .composite([{ input: `temp/${userName}-RIO-TEXT.png`, gravity: 'center' }])
             .toFile(finalImagePath);
