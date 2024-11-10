@@ -8,7 +8,7 @@ const sharp = require('sharp');
 const path = require('path');
 const { generate } = require('text-to-image');
 
-async function overlayImageAndText(width, height, fontSize, fontPath, originalImagePath, overlaidImagePath, opacity, userName) {
+async function overlayImageAndText(width, height, fontSize, fontPath, originalImagePath, overlaidImagePath, opacity, userName, rnd3dig) {
     try {
         // Resize 'riodejaneiro.png' to match the specified width and height and set opacity
         const overlayImage = await sharp(`images/riodejaneiro.png`)
@@ -40,7 +40,7 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalIm
         fs.writeFileSync(`temp/${userName}-RIO-TEXT.png`, base64Data, 'base64');
 
         // Overlay the text image on top of the base image
-        const finalImagePath = `temp/${userName}-RIO-FINAL.png`;
+        const finalImagePath = `temp/${userName}-RIO-FINAL-${rnd3dig}.png`;
         const finalImage = await sharp(overlaidImagePath)
             .composite([{ input: `temp/${userName}-RIO-TEXT.png`, gravity: 'center' }])
             .toFile(finalImagePath);
@@ -78,6 +78,7 @@ module.exports = {
         try {
             const userName = userID;
             const opacity = intensityDecimal;
+            const rnd3dig = Math.floor(Math.random() * 1000);
 
             // Download the base image
             const downloadImage = await axios.get(imageUrl, { responseType: 'arraybuffer' });
@@ -99,9 +100,9 @@ module.exports = {
             console.log('Font Size:', fontSize);
 
             // Call function to overlay image and text
-            await overlayImageAndText(width, height, fontSize, fontPath, originalImagePath, overlaidImagePath, opacity, userName);
+            await overlayImageAndText(width, height, fontSize, fontPath, originalImagePath, overlaidImagePath, opacity, userName, rnd3dig);
 
-            const imageURL = process.env.UPLOADURL + userName + '-RIO-FINAL.png';
+            const imageURL = process.env.UPLOADURL + userName + `-RIO-FINAL-${rnd3dig}.png`;
             console.log('Final Image:', imageURL);
             return imageURL;
 
