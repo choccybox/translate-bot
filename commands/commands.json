@@ -39,6 +39,14 @@
     "file": "caption.js",
     "isChainable": true
   },
+  "convert": {
+    "file": "fileConvert.js",
+    "isChainable": false
+  },
+  "conv": {
+    "file": "fileConvert.js",
+    "isChainable": false
+  },
   "rj": {
     "file": "riodejaneiro.js",
     "isChainable": true

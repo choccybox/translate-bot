@@ -25,7 +25,6 @@ const client = new Client({
 });
 
 const commandsList = require('./commands/commands.json');
-const { time } = require('console');
 const getUnchainableCommands = () => {
   return Object.keys(commandsList).filter(command => !commandsList[command].isChainable);
 };
@@ -44,8 +43,14 @@ client.on('messageCreate', async (message) => {
       if (!currentAttachments && message.reference) {
           const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
           currentAttachments = repliedMessage.attachments.size > 0 ? repliedMessage.attachments : null;
+          // if it doesnt have an attachment, check if it is unchainable command
+      } else if (!currentAttachments && uniqueCommands.length === 1 && unchainableCommands.includes(uniqueCommands[0])) {
+        console.log('No attachment found, but command is unchainable.');
+      } else if (!currentAttachments && message.content.includes('help')) {
+        console.log('No attachment found, but help command.');
       } else if (!currentAttachments) {
-        return message.reply({ content: 'I need a file, idiot.' });
+        message.reply({ content: 'Please provide an audio or video file to process.' });
+        return;
       }
 
       if (uniqueCommands.length > 1) {
@@ -67,31 +72,32 @@ client.on('messageCreate', async (message) => {
               continue;
           }
 
-          try {
+            try {
               const commandFile = require(path.join(__dirname, 'commands', commandInfo.file));
               console.log(`Executing command: ${commandName}`);
 
               const result = await commandFile.run(message, client, currentAttachments, isChained, userID);
 
-                if (!unchainableCommands.includes(commandName)) {
-                  if (result) {
-                    await message.reply({ content: result }).catch(console.error);
-                  } else {
-                    console.log(`Command ${commandName} did not produce a result. Stopping process.`);
-                    return message.reply({ content: `something went wrong` }).catch(console.error);
-                  }
+              if (!unchainableCommands.includes(commandName)) {
+                if (result && typeof result === 'string') {
+                  await message.reply({ content: result }).catch(console.error);
+                } else {
+                  console.log(`Command ${commandName} did not produce a valid result. Stopping process.`);
+                }
               } else {
-                  console.log(`Command ${commandName} is in noChainList, so no attachment check needed.`);
-                  if (!result) {
-                  } else {
-                      console.log(`Command ${commandName} did not produce a result. Stopping process.`);
-                      return message.reply({ content: `something went wrong` }).catch(console.error);
-                  }
+                console.log(`Command ${commandName} is in noChainList, so no attachment check needed.`);
+                if (!result) {
+                  console.log(`Command ${commandName} did not produce a result. Stopping process.`);
+                }
               }
-          } catch (error) {
+            } catch (error) {
               console.error(`Error executing command ${commandName}:`, error);
-              return message.reply({ content: `An error occurred while processing the command ${commandName}.` });
-          }
+              if (message.content.includes('help')) {
+                console.log(`Help command error: ${error.message}`);
+              } else {
+                return message.reply({ content: `An error occurred while processing the command ${commandName}.` });
+              }
+            }
 
           isChained = true;
           console.log('isChained index:', isChained);
