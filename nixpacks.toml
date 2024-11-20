@@ -1,8 +1,6 @@
-[phases.setup]
-nixPkgs = ["ffmpeg", "nodejs_18", "npm"]
-
-[phases.install]
-cmds = ["npm ci"]
-
-[phases.start]
-cmds = ["node index.js"]
+{
+  packageOverrides = pkgs: {
+    nodejs = pkgs.nodejs-18_x;
+    ffmpeg = pkgs.ffmpeg;
+  };
+}
