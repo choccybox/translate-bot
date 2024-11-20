@@ -63,7 +63,6 @@ module.exports = {
     }
 }
 
-
     async function convertToGIF(message, userName, actualUsername, contentType, rnd5dig, lq) {
         const userMakesDir = path.join(__dirname, 'userMakes');
         try {
@@ -72,8 +71,15 @@ module.exports = {
             console.error('Error creating userMakes directory:', err);
         }
 
+        try {
+            fs.accessSync(userMakesDir, fs.constants.W_OK);
+        } catch (err) {
+            console.error('Cannot write to userMakes directory:', err);
+            return message.reply({ content: 'Error: Cannot write output file' });
+        }
+
         const outputPath = path.join(__dirname, '..', 'userMakes', `${userName}-GIF-${rnd5dig}.gif`);
-        
+
         return new Promise((resolve, reject) => {
             let progressMessage = null;
             let lastUpdateTime = 0;

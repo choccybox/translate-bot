@@ -6,7 +6,7 @@ const express = require('express');
 const index = express();
 const PORT = process.env.PORT;
 
-index.use('/userMakes', express.static(path.join(__dirname, 'userMakes')));
+index.use('/userMakes', express.static('/app/userMakes'));
 index.use('/temp', express.static(path.join(__dirname, 'temp')));
 index.use('/images', express.static(path.join(__dirname, 'images')));
 

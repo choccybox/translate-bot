@@ -97,6 +97,13 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalIm
             }
         });
 
+        try {
+            fs.accessSync(userMakesDir, fs.constants.W_OK);
+        } catch (err) {
+            console.error('Cannot write to userMakes directory:', err);
+            return message.reply({ content: 'Error: Cannot write output file' });
+        }
+
         // Resize 'riodejaneiro.png' to match the specified width and height and set opacity
         const overlayImage = await sharp(`images/riodejaneiro.png`)
             .resize(width, height)
