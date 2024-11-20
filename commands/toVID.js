@@ -3,6 +3,7 @@ const isChainable = false;
 const dotenv = require('dotenv');
 dotenv.config();
 const fs = require('fs');
+const path = require('path');
 const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
 
@@ -51,9 +52,17 @@ module.exports = {
 
 
     function convertToVid(message, userName, actualUsername, contentType, rnd5dig) {
-        const outputPath = `userMakes/${userName}-VID-${rnd5dig}.mp4`;
         let progressMessage = null;
         let startTime = Date.now();
+
+        const userMakesDir = path.join(__dirname, 'userMakes');
+        try {
+            fs.mkdirSync(userMakesDir, { recursive: true, mode: 0o777 });
+        } catch (err) {
+            console.error('Error creating userMakes directory:', err);
+        }
+
+        const outputPath = path.join(userMakesDir, `${userName}-VID-${rnd5dig}.mp4`);
 
         return new Promise((resolve, reject) => {
             ffmpeg(`temp/${userName}-TOVIDCONV.${contentType}`)

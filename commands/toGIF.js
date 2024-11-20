@@ -3,6 +3,7 @@ const isChainable = false;
 const dotenv = require('dotenv');
 dotenv.config();
 const fs = require('fs');
+const path = require('path');
 const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
 
@@ -64,7 +65,14 @@ module.exports = {
 
 
     async function convertToGIF(message, userName, actualUsername, contentType, rnd5dig, lq) {
-        const outputPath = `userMakes/${userName}-GIF-${rnd5dig}.gif`;
+        const userMakesDir = path.join(__dirname, 'userMakes');
+        try {
+            fs.mkdirSync(userMakesDir, { recursive: true, mode: 0o777 });
+        } catch (err) {
+            console.error('Error creating userMakes directory:', err);
+        }
+
+        const outputPath = path.join(userMakesDir, `${userName}-GIF-${rnd5dig}.gif`);
 
         return new Promise((resolve, reject) => {
             let progressMessage = null;
