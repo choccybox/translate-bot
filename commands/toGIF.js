@@ -72,8 +72,8 @@ module.exports = {
             console.error('Error creating userMakes directory:', err);
         }
 
-        const outputPath = path.join(userMakesDir, `${userName}-GIF-${rnd5dig}.gif`);
-
+        const outputPath = path.join(__dirname, '..', 'userMakes', `${userName}-GIF-${rnd5dig}.gif`);
+        
         return new Promise((resolve, reject) => {
             let progressMessage = null;
             let lastUpdateTime = 0;

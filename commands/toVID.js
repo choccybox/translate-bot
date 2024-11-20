@@ -62,7 +62,7 @@ module.exports = {
             console.error('Error creating userMakes directory:', err);
         }
 
-        const outputPath = path.join(userMakesDir, `${userName}-VID-${rnd5dig}.mp4`);
+        const outputPath = path.join(__dirname, '..', 'userMakes', `${userName}-GIF-${rnd5dig}.mp4`);
 
         return new Promise((resolve, reject) => {
             ffmpeg(`temp/${userName}-TOVIDCONV.${contentType}`)
