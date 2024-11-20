@@ -29,6 +29,9 @@ module.exports = {
             const fileType = attachment.contentType;
             const contentType = attachment.contentType.split('/')[1];
             const rnd5dig = Math.floor(Math.random() * 90000) + 10000;
+
+            const height = attachment.height / 2;
+            const width = attachment.width / 2;
             
             // look for lq argument
             const args = message.content.toLowerCase().split(' ');
@@ -51,7 +54,7 @@ module.exports = {
             console.log('file type:', fileType);
 
             try {
-                await convertToGIF(message, userName, actualUsername, contentType, rnd5dig, lq);
+                await convertToGIF(message, userName, actualUsername, contentType, rnd5dig, lq, height, width);
             } catch (err) {
                 console.error('Error:', err);
                 return message.reply({ content: 'Error converting video to gif' });
@@ -63,8 +66,8 @@ module.exports = {
 }
 
 
-    async function convertToGIF(message, userName, actualUsername, contentType, rnd5dig, lq) {
-        const outputPath = `temp/${userName}-GIF-${rnd5dig}.gif`;
+    async function convertToGIF(message, userName, actualUsername, contentType, rnd5dig, lq, height, width) {
+        const outputPath = `temp/${userName}-GIFFINAL-${rnd5dig}.gif`;
 
         return new Promise((resolve, reject) => {
             let progressMessage = null;
@@ -74,7 +77,7 @@ module.exports = {
 
             const ffmpegCommand = ffmpeg(`temp/${userName}-TOGIFCONV.${contentType}`)
                 .toFormat('gif')
-                .size('320x240')
+                .size(`${width}x${height}`)
                 .outputOptions(['-y', '-compression_level', '6']);
 
             ffmpegCommand.on('progress', async (progress) => {
@@ -111,7 +114,7 @@ module.exports = {
                     .fps(15)
                     .on('start', (commandLine) => console.log('Started FFmpeg with command:', commandLine))
                     .on('end', () => {
-                        const finalURL = process.env.UPLOADURL + userName + '-GIF-' + rnd5dig + '.gif';
+                        const finalURL = process.env.UPLOADURL + userName + '-GIFFINAL-' + rnd5dig + '.gif';
                         if (progressMessage) {
                             progressMessage.edit({ content: finalURL }).catch(console.error);
                         } else {
@@ -132,11 +135,11 @@ module.exports = {
                 ffmpegCommand
                     .fps(10)
                     .outputOptions([
-                        '-vf', 'scale=320:240,split[s0][s1];[s0]palettegen=max_colors=128:stats_mode=single[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle'
+                        '-vf', `scale=${width}:${height},split[s0][s1];[s0]palettegen=max_colors=128:stats_mode=single[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle`
                     ])
                     .on('start', (commandLine) => console.log('Started FFmpeg with command:', commandLine))
                     .on('end', () => {
-                        const finalURL = process.env.UPLOADURL + userName + '-GIF-' + rnd5dig + '.gif';
+                        const finalURL = process.env.UPLOADURL + userName + '-GIFFINAL-' + rnd5dig + '.gif';
                         if (progressMessage) {
                             progressMessage.edit({ content: finalURL }).catch(console.error);
                         } else {

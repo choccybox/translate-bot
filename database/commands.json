@@ -60,39 +60,39 @@
     "isChainable": true
   },
   "togif": {
-    "file": "toGIF.js",
+    "file": "togif.js",
     "isChainable": false
   },
   "gif": {
-    "file": "toGIF.js",
+    "file": "togif.js",
     "isChainable": false
   },
   "2gif": {
-    "file": "toGIF.js",
+    "file": "togif.js",
     "isChainable": false
   },
   "tovid": {
-    "file": "toVID.js",
+    "file": "tovid.js",
     "isChainable": false
   },
   "tovideo": {
-    "file": "toVID.js",
+    "file": "tovid.js",
     "isChainable": false
   },
   "vid": {
-    "file": "toVID.js",
+    "file": "tovid.js",
     "isChainable": false
   },
   "video": {
-    "file": "toVID.js",
+    "file": "tovid.js",
     "isChainable": false
   },
   "2vid": {
-    "file": "toVID.js",
+    "file": "tovid.js",
     "isChainable": false
   },
   "2video": {
-    "file": "toVID.js",
+    "file": "tovid.js",
     "isChainable": false
   }
 }

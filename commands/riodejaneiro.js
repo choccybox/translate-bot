@@ -23,6 +23,7 @@ module.exports = {
         const userName = userID;
         const args = message.content.split(' ');
         let intensityDecimal = 0.5; // Default intensity
+        let customText = 'Rio De Janeiro'; // Default text
 
         if (args.length > 1 && args[1].includes(':')) {
             const parts = args[1].split(':');
@@ -46,6 +47,7 @@ module.exports = {
             const userName = userID;
             const opacity = intensityDecimal;
             const rnd5dig = Math.floor(Math.random() * 90000) + 10000;
+            const customizedText = customText ? customText : 'Rio De Janeiro';
 
             // Download the base image
             const downloadImage = await axios.get(imageUrl, { responseType: 'arraybuffer' });
@@ -65,9 +67,9 @@ module.exports = {
             console.log('Font Size:', fontSize);
 
             // Call function to overlay image and text
-            await overlayImageAndText(width, height, fontSize, fontPath, originalImagePath, overlaidImagePath, opacity, userName, rnd5dig, customText);
+            await overlayImageAndText(width, height, fontSize, fontPath, originalImagePath, overlaidImagePath, opacity, userName, rnd5dig, customizedText);
 
-            const imageURL = process.env.UPLOADURL + userName + `-RIO-FINAL-${rnd5dig}.png`;
+            const imageURL = process.env.UPLOADURL + userName + `-RIOFINAL-${rnd5dig}.png`;
             console.log('Final Image:', imageURL);
             return imageURL;
 
@@ -83,7 +85,7 @@ module.exports = {
     }
 };
 
-async function overlayImageAndText(width, height, fontSize, fontPath, originalImagePath, overlaidImagePath, opacity, userName, rnd5dig, customText) {
+async function overlayImageAndText(width, height, fontSize, fontPath, originalImagePath, overlaidImagePath, opacity, userName, rnd5dig, customizedText) {
     try {
         // Resize 'riodejaneiro.png' to match the specified width and height and set opacity
         const overlayImage = await sharp(`images/riodejaneiro.png`)
@@ -96,7 +98,7 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalIm
             .toFile(overlaidImagePath);
 
         // Generate text image using 'text-to-image' module
-        const dataUri = await generate(customText ? customText : 'Rio De Janeiro', {
+        const dataUri = await generate(customizedText, {
             debug: true,
             maxWidth: width,
             customHeight: height,
@@ -113,7 +115,7 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalIm
         fs.writeFileSync(`temp/${userName}-RIO-TEXT.png`, base64Data, 'base64');
 
         // Overlay the text image on top of the base image
-        const finalImagePath = `temp/${userName}-RIO-FINAL-${rnd5dig}.png`;
+        const finalImagePath = `temp/${userName}-RIOFINAL-${rnd5dig}.png`;
         const finalImage = await sharp(overlaidImagePath)
             .jpeg({ quality: 90 })
             .composite([{ input: `temp/${userName}-RIO-TEXT.png`, blend: 'over' }])
