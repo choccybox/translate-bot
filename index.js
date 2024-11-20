@@ -6,15 +6,11 @@ const express = require('express');
 const index = express();
 const PORT = process.env.PORT;
 
-index.use('/userMakes', express.static('/app/userMakes'));
-index.use('/temp', express.static(path.join(__dirname, 'temp')));
-index.use('/images', express.static(path.join(__dirname, 'images')));
-
-// Your other routes and middleware come after this
-
 index.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+// Serve static files from the "public" directory
+index.use('/images', express.static(path.join(__dirname, 'temp')));
 
 const client = new Client({
   intents: [
