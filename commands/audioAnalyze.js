@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 const fs = require('fs');
 const axios = require('axios');
-const ffmpeg = require('ffmpeg');
+const ffmpeg = require('fluent-ffmpeg');
 
 module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained, userID) {
