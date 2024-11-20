@@ -85,25 +85,6 @@ module.exports = {
 
 async function overlayImageAndText(width, height, fontSize, fontPath, originalImagePath, overlaidImagePath, opacity, userName, rnd5dig, customText) {
     try {
-        // Ensure temp and userMakes directories exist with full permissions
-        const tempDir = path.join(__dirname, 'temp');
-        const userMakesDir = path.join(__dirname, 'userMakes');
-        
-        [tempDir, userMakesDir].forEach(dir => {
-            try {
-                fs.mkdirSync(dir, { recursive: true, mode: 0o777 });
-            } catch (err) {
-                console.error(`Error creating directory ${dir}:`, err);
-            }
-        });
-
-        try {
-            fs.accessSync(userMakesDir, fs.constants.W_OK);
-        } catch (err) {
-            console.error('Cannot write to userMakes directory:', err);
-            return message.reply({ content: 'Error: Cannot write output file' });
-        }
-
         // Resize 'riodejaneiro.png' to match the specified width and height and set opacity
         const overlayImage = await sharp(`images/riodejaneiro.png`)
             .resize(width, height)
@@ -129,18 +110,14 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalIm
             verticalAlign: 'center',
         });
         const base64Data = dataUri.replace(/^data:image\/png;base64,/, '');
-        
-        // Use path.join for consistent path handling
-        const textImagePath = path.join(tempDir, `${userName}-RIO-TEXT.png`);
-        fs.writeFileSync(textImagePath, base64Data, 'base64');
+        fs.writeFileSync(`temp/${userName}-RIO-TEXT.png`, base64Data, 'base64');
 
         // Overlay the text image on top of the base image
-        const finalImagePath = path.join(__dirname, '..', 'userMakes', `${userName}-RIO-FINAL-${rnd5dig}.png`);
+        const finalImagePath = `temp/${userName}-RIO-FINAL-${rnd5dig}.png`;
         const finalImage = await sharp(overlaidImagePath)
             .jpeg({ quality: 90 })
-            .composite([{ input: textImagePath, blend: 'over' }])
+            .composite([{ input: `temp/${userName}-RIO-TEXT.png`, blend: 'over' }])
             .toFile(finalImagePath);
-        
         // turn off cache
         sharp.cache(false);
         return finalImage;

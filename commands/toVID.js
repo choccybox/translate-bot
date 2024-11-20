@@ -3,7 +3,6 @@ const isChainable = false;
 const dotenv = require('dotenv');
 dotenv.config();
 const fs = require('fs');
-const path = require('path');
 const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
 
@@ -44,7 +43,7 @@ module.exports = {
                 console.error('Error:', err);
                 return message.reply({ content: 'Error converting gif to video' });
             } finally {
-                fs.unlinkSync(`temp/${userName}-TOVIDCONV.${contentType}`);
+                fs.unlinkSync(`temp/${userName}.${contentType}`);
             }
         }
     }
@@ -52,27 +51,12 @@ module.exports = {
 
 
     function convertToVid(message, userName, actualUsername, contentType, rnd5dig) {
+        const outputPath = `temp/${userName}-VID-${rnd5dig}.mp4`;
         let progressMessage = null;
         let startTime = Date.now();
 
-        const userMakesDir = path.join(__dirname, 'userMakes');
-        try {
-            fs.mkdirSync(userMakesDir, { recursive: true, mode: 0o777 });
-        } catch (err) {
-            console.error('Error creating userMakes directory:', err);
-        }
-
-        try {
-            fs.accessSync(userMakesDir, fs.constants.W_OK);
-        } catch (err) {
-            console.error('Cannot write to userMakes directory:', err);
-            return message.reply({ content: 'Error: Cannot write output file' });
-        }
-
-        const outputPath = path.join(__dirname, '..', 'userMakes', `${userName}-GIF-${rnd5dig}.mp4`);
-
         return new Promise((resolve, reject) => {
-            ffmpeg(`temp/${userName}-TOVIDCONV.${contentType}`)
+            ffmpeg(`temp/${userName}.${contentType}`)
                 .toFormat('mp4')
                 .videoCodec('libx264')
                 .outputOptions([
