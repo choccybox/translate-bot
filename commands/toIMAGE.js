@@ -43,7 +43,7 @@ module.exports = {
                 return message.reply({ content: 'Error converting video to gif' });
             } finally {
                 fs.unlinkSync(`temp/${userName}-TOIMGCONV-${rnd5dig}.${contentType}`);
-
+                fs.unlinkSync(`temp/${userName}-IMAGES-${rnd5dig}.zip`);
             }
         }
     }
@@ -65,7 +65,7 @@ async function convertToImages(message, userName, contentType, rnd5dig) {
         let firstUpdate = true;
 
         const ffmpegCommand = ffmpeg(`temp/${userName}-TOIMGCONV-${rnd5dig}.${contentType}`)
-            .outputOptions(['-q:v 2'])
+            .outputOptions(['-q:v 31']) // Aggressively compress images
             .on('start', (commandLine) => console.log('Started FFmpeg with command:', commandLine))
             .on('progress', async (progress) => {
                 const currentTime = Date.now();
@@ -90,6 +90,15 @@ async function convertToImages(message, userName, contentType, rnd5dig) {
                 console.log('Finished extracting frames');
                 try {
                     await zipImages(outputDir, zipPath);
+                    const stats = fs.statSync(zipPath);
+                    const fileSizeInBytes = stats.size;
+                    const fileSizeInMegabytes = fileSizeInBytes / (1024 * 1024);
+
+                    if (fileSizeInMegabytes > 25) {
+                        fs.unlinkSync(zipPath);
+                        return reject(new Error('The zip file is too big to be sent (over 25MB).'));
+                    }
+
                     fs.rmdirSync(outputDir, { recursive: true });
                     if (progressMessage) {
                         progressMessage.edit({ content: 'Conversion complete. Downloading...' }).catch(console.error);
