@@ -59,6 +59,22 @@
     "file": "riodejaneiro.js",
     "isChainable": true
   },
+  "toaudio": {
+    "file": "toAUDIO.js",
+    "isChainable": false
+  },
+  "2audio": {
+    "file": "toAUDIO.js",
+    "isChainable": false
+  },
+  "toaud": {
+    "file": "toAUDIO.js",
+    "isChainable": false
+  },
+  "2aud": {
+    "file": "toAUDIO.js",
+    "isChainable": false
+  },
   "togif": {
     "file": "toGIF.js",
     "isChainable": false
@@ -71,28 +87,20 @@
     "file": "toGIF.js",
     "isChainable": false
   },
-  "tovid": {
-    "file": "toVID.js",
+  "toimage": {
+    "file": "toIMAGE.js",
     "isChainable": false
   },
-  "tovideo": {
-    "file": "toVID.js",
+  "toimg": {
+    "file": "toIMAGE.js",
     "isChainable": false
   },
-  "vid": {
-    "file": "toVID.js",
+  "2img": {
+    "file": "toIMAGE.js",
     "isChainable": false
   },
-  "video": {
-    "file": "toVID.js",
-    "isChainable": false
-  },
-  "2vid": {
-    "file": "toVID.js",
-    "isChainable": false
-  },
-  "2video": {
-    "file": "toVID.js",
+  "2image": {
+    "file": "toIMAGE.js",
     "isChainable": false
   }
 }

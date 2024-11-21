@@ -10,14 +10,16 @@ const { generate } = require('text-to-image');
 
 module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained, userID) {
-        const attachment = currentAttachments.first() || message.attachments.first();
+        const hasAttachment = currentAttachments || message.attachments;
+        const firstAttachment = hasAttachment.first();
+        const isImage = firstAttachment && firstAttachment.contentType.includes('image');
         if (message.content.includes('help')) {
             return message.reply({
                 content: 'Adds a **Rio De Janeiro** instagram filter over an image\n' +
                     'Arguments: `rio:intesity` where intensity is a number between 2 and 8. (default is 5)\nrio:customtext` where customtext is any different text you want (can be combined with intesity)\n' +
                     'Available alt names:`' + `${altnames.join(', ')}` + '`',
             });
-        } else if (!attachment) {
+        } else if (!isImage) {
             return message.reply({ content: 'Please provide an audio or video file to process.' });
         }
         const userName = userID;
