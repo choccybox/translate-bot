@@ -40,7 +40,7 @@ module.exports = {
             console.log('file type:', fileType);
 
             try {
-                await convertToGIF(message, userName, actualUsername, contentType, rnd5dig, lq, height, width);
+                await convertToGIF(message, userName, actualUsername, contentType, rnd5dig, height, width);
             } catch (err) {
                 console.error('Error:', err);
                 return message.reply({ content: 'Error converting video to gif' });
@@ -52,7 +52,7 @@ module.exports = {
 }
 
 
-    async function convertToGIF(message, userName, actualUsername, contentType, rnd5dig, lq, height, width) {
+    async function convertToGIF(message, userName, actualUsername, contentType, rnd5dig, height, width) {
         const outputPath = `temp/${userName}-GIFFINAL-${rnd5dig}.gif`;
 
         return new Promise((resolve, reject) => {
