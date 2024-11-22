@@ -206,10 +206,10 @@ client.once('ready', async () => {
     fs.mkdirSync(tempDir);
     return;
   }
-
   // Read files in temp directory
   const files = fs.readdirSync(tempDir);
-  
+  console.log('Files in temp directory:', files);
+
   // Delete files that don't include 'GIFFINAL'
   files.forEach(file => {
     const filePath = path.join(tempDir, file);

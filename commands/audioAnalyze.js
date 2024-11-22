@@ -70,7 +70,7 @@ module.exports = {
                 } else if (firstAttachment.contentType.startsWith('audio/')) {
                     const audioData = fs.readFileSync(`temp/${randomName}-S2T-${rnd5dig}.mp3`);
                     const base64Audio = `data:audio/${contentType};base64,${audioData.toString('base64')}`;
-                    processAudio(base64Audio, message, randomName, fileName, model);
+                    processAudio(base64Audio, message, randomName, fileName, model, rnd5dig);
                 }
             } catch (error) {
                 console.error('Error processing:', error);
@@ -80,7 +80,7 @@ module.exports = {
     }
 };
 
-async function processAudio(base64Audio, message, randomName, fileName, model) {
+async function processAudio(base64Audio, message, randomName, fileName, model, rnd5dig) {
     try {
         const abrmodelstomodelnames = {
             distil: 'distil-whisper/distil-large-v3',
@@ -128,6 +128,7 @@ async function processAudio(base64Audio, message, randomName, fileName, model) {
         }
     } catch (error) {
         console.error(error);
+        return message.reply({ content: 'the model fucking gave up dawg, try again ig' });
     } finally {
         // delete all files that have -S2T-${rnd5dig} in the name
         fs.readdirSync('./temp').forEach((file) => {
