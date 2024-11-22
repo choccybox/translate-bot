@@ -43,7 +43,7 @@ module.exports = {
             console.log('Custom Text:', customText);
         }
 
-        const imageUrl = attachment.url;
+        const imageUrl = firstAttachment.url;
 
         try {
             const userName = userID;
