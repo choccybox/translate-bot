@@ -28,16 +28,21 @@ module.exports = {
         let customText = 'Rio De Janeiro'; // Default text
 
         if (args.length > 1 && args[1].includes(':')) {
-            const parts = args[1].split(':');
+            const parts = message.content.split(':');
             if (parts.length === 2) {
-            if (isNaN(parts[1])) {
-                customText = parts[1];
-            } else {
-                intensityDecimal = parseInt(parts[1], 10) / 10 || 0.5;
-            }
-            } else if (parts.length === 3) {
-            intensityDecimal = parseInt(parts[1], 10) / 10 || 0.5;
-            customText = parts[2];
+                if (isNaN(parts[1])) {
+                    customText = parts.slice(1).join(':');
+                } else {
+                    intensityDecimal = parseInt(parts[1], 10) / 10 || 0.5;
+                }
+            } else if (parts.length >= 3) {
+                if (isNaN(parts[1])) {
+                    customText = parts.slice(1, -1).join(':');
+                    intensityDecimal = parseInt(parts[parts.length - 1], 10) / 10 || 0.5;
+                } else {
+                    intensityDecimal = parseInt(parts[1], 10) / 10 || 0.5;
+                    customText = parts.slice(2).join(':');
+                }
             }
             console.log('Intensity:', intensityDecimal);
             console.log('Custom Text:', customText);
@@ -53,7 +58,7 @@ module.exports = {
 
             // Download the base image
             const downloadImage = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-            const originalImagePath = `temp/${userName}-RIO.png`;
+            const originalImagePath = `temp/${userName}-RIO-${rnd5dig}.png`;
             fs.writeFileSync(originalImagePath, downloadImage.data);
 
             // Get image dimensions using sharp for text positioning
@@ -62,7 +67,7 @@ module.exports = {
             const height = metadata.height;
 
             const fontPath = 'fonts/InstagramSans.ttf'; // Path to custom font file
-            const overlaidImagePath = `temp/${userName}-RIO-OVERLAID.png`;
+            const overlaidImagePath = `temp/${userName}-RIOOVERLAID-${rnd5dig}.png`;
 
             // set the font size to 1/10th of the image entire size
             const fontSize = Math.floor(Math.min(width, height) / 10);
@@ -78,11 +83,6 @@ module.exports = {
         } catch (error) {
             console.error('Error processing the image:', error);
             return message.reply({ content: 'Error processing the image.' });
-        } finally {
-            // Clean up temp files
-             fs.unlinkSync(`temp/${userName}-RIO.png`);
-            fs.unlinkSync(`temp/${userName}-RIO-OVERLAID.png`);
-            fs.unlinkSync(`temp/${userName}-RIO-TEXT.png`);
         }
     }
 };
@@ -114,13 +114,13 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalIm
             verticalAlign: 'center',
         });
         const base64Data = dataUri.replace(/^data:image\/png;base64,/, '');
-        fs.writeFileSync(`temp/${userName}-RIO-TEXT.png`, base64Data, 'base64');
+        fs.writeFileSync(`temp/${userName}-RIOTEXT-${rnd5dig}.png`, base64Data, 'base64');
 
         // Overlay the text image on top of the base image
         const finalImagePath = `temp/${userName}-RIOFINAL-${rnd5dig}.png`;
         const finalImage = await sharp(overlaidImagePath)
             .jpeg({ quality: 90 })
-            .composite([{ input: `temp/${userName}-RIO-TEXT.png`, blend: 'over' }])
+            .composite([{ input: `temp/${userName}-RIOTEXT-${rnd5dig}.png`, blend: 'over' }])
             .toFile(finalImagePath);
         // turn off cache
         sharp.cache(false);
@@ -128,5 +128,9 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalIm
     } catch (error) {
         console.error('Error processing image:', error);
         throw error;
+    } finally {
+        fs.unlinkSync(`temp/${userName}-RIO-${rnd5dig}.png`);
+        fs.unlinkSync(`temp/${userName}-RIOOVERLAID-${rnd5dig}.png`);
+        fs.unlinkSync(`temp/${userName}-RIOTEXT-${rnd5dig}.png`);
     }
 }

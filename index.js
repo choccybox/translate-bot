@@ -1,13 +1,14 @@
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord.js');
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const index = express();
-const PORT = process.env.PORT;
+const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+
 
 index.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on http://localhost:3000`);
 });
 // Serve static files from the "public" directory
 index.use('/images', express.static(path.join(__dirname, 'temp')));
@@ -61,6 +62,8 @@ client.on('messageCreate', async (message) => {
       console.log('No attachment found, but command is unchainable.');
     } else if (!currentAttachments && message.content.includes('help')) {
       console.log('No attachment found, but help command.');
+      const commands = require('./database/commands.json');
+      
     } else if (!currentAttachments) {
       message.reply({ content: 'Please provide an audio or video file to process.' });
       return;
@@ -198,27 +201,71 @@ commandFiles.forEach(file => {
 // Write the commands to a .json file
 fs.writeFileSync('./database/commands.json', JSON.stringify(commands, null, 2));
 
+async function purgeAllCommands() {
+  try {
+      // Wait for client to be ready
+      await new Promise(resolve => {
+          client.once('ready', resolve);
+          client.login(process.env.TOKEN);
+      });
+
+      console.log('Started removing all commands...');
+
+      // Get all guilds the bot is in
+      const guilds = await client.guilds.fetch();
+
+      // Remove commands from each guild
+      for (const [guildId] of guilds) {
+          try {
+              console.log(`Removing commands from guild ${guildId}...`);
+              await rest.put(
+                  Routes.applicationGuildCommands(client.user.id, guildId),
+                  { body: [] }
+              );
+              console.log(`✓ Removed all commands from guild ${guildId}`);
+          } catch (error) {
+              console.error(`Error removing commands from guild ${guildId}:`, error);
+          }
+      }
+
+      // Remove global commands
+      try {
+          console.log('Removing global commands...');
+          await rest.put(
+              Routes.applicationCommands(client.user.id),
+              { body: [] }
+          );
+          console.log('✓ Removed all global commands');
+      } catch (error) {
+          console.error('Error removing global commands:', error);
+      }
+
+      console.log('Command purge complete!');
+      process.exit(0);
+  } catch (error) {
+      console.error('Fatal error:', error);
+      process.exit(1);
+  }
+}
+
 client.once('ready', async () => {
   const tempDir = './temp';
   
-  // Create temp directory if it doesn't exist
-  if (!fs.existsSync(tempDir)) {
-    fs.mkdirSync(tempDir);
-    return;
-  }
   // Read files in temp directory
   const files = fs.readdirSync(tempDir);
   console.log('Files in temp directory:', files);
 
-  // Delete files that don't include 'GIFFINAL'
+  // Delete files that don't include 'FINAL'
   files.forEach(file => {
     const filePath = path.join(tempDir, file);
-    if (!file.includes('GIFFINAL', 'RIOFINAL')) {
+    if (!file.includes('FINAL')) {
       fs.rmSync(filePath, { force: true });
     }
   });
 
+  purgeAllCommands();
   console.log(`wake yo ass up bc it's time to go beast mode`);
 });
+
 
 client.login(process.env.TOKEN);
