@@ -7,7 +7,7 @@ const index = express();
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 
-index.listen(PORT, () => {
+index.listen(3000, () => {
   console.log(`Server is running on http://localhost:3000`);
 });
 // Serve static files from the "public" directory

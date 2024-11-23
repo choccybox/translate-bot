@@ -1,3 +1,7 @@
 node_modules
 .env
 .vscode
+temp/*
+!temp/.gitkeep
+database/*
+!database/.gitkeep
