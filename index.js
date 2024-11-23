@@ -250,6 +250,11 @@ async function purgeAllCommands() {
 
 client.once('ready', async () => {
   const tempDir = './temp';
+
+  // check if temp directory exists, if not create it
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir);
+  }
   
   // Read files in temp directory
   const files = fs.readdirSync(tempDir);
