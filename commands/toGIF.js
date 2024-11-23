@@ -1,5 +1,7 @@
 const altnames = ['togif', 'gif', '2gif'];
 const isChainable = false;
+const whatitdo = 'Converts a video to a gif';
+
 const dotenv = require('dotenv');
 dotenv.config();
 const fs = require('fs');

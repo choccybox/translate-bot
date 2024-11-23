@@ -1,5 +1,6 @@
 const altnames = ['rj', 'rio', 'riodejaneiro', 'rjd', 'rdj'];
 const isChainable = true;
+const whatitdo = 'Adds a Rio De Janeiro instagram filter over an image';
 
 const fs = require('fs');
 const axios = require('axios');

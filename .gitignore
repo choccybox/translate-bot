@@ -3,5 +3,4 @@ node_modules
 .vscode
 temp/*
 !temp/.gitkeep
-database/*
-!database/.gitkeep
+.users.json

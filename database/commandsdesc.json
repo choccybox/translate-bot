@@ -1,0 +1,49 @@
+{
+  "audioanalyze": {
+    "whatitdoes": "transcribes audio/video to text",
+    "altnames": [
+      "audio",
+      "aa",
+      "audioanalyze",
+      "speech2text",
+      "s2t",
+      "stt"
+    ]
+  },
+  "riodejaneiro": {
+    "whatitdoes": "Adds a Rio De Janeiro instagram filter over an image",
+    "altnames": [
+      "rj",
+      "rio",
+      "riodejaneiro",
+      "rjd",
+      "rdj"
+    ]
+  },
+  "toaudio": {
+    "whatitdoes": "Converts a video to a mp3",
+    "altnames": [
+      "toaudio",
+      "2audio",
+      "toaud",
+      "2aud"
+    ]
+  },
+  "togif": {
+    "whatitdoes": "Converts a video to a gif",
+    "altnames": [
+      "togif",
+      "gif",
+      "2gif"
+    ]
+  },
+  "toimage": {
+    "whatitdoes": "Converts all video frames to images",
+    "altnames": [
+      "toimage",
+      "toimg",
+      "2img",
+      "2image"
+    ]
+  }
+}

@@ -1,5 +1,7 @@
 const altnames = ['toimage', 'toimg', '2img', '2image'];
 const isChainable = false;
+const whatitdo = 'Converts all video frames to images';
+
 const dotenv = require('dotenv');
 dotenv.config();
 const fs = require('fs');
