@@ -1,6 +1,6 @@
 {
   "audioanalyze": {
-    "whatitdoes": "transcribes audio/video to text",
+    "whatitdoes": "transcribes audio/video to text, supports audio and video",
     "altnames": [
       "audio",
       "aa",
@@ -10,8 +10,17 @@
       "stt"
     ]
   },
+  "caption": {
+    "whatitdoes": "Adds a caption to an image, supports images and videos",
+    "altnames": [
+      "caption",
+      "cap",
+      "text",
+      "txt"
+    ]
+  },
   "riodejaneiro": {
-    "whatitdoes": "Adds a Rio De Janeiro instagram filter over an image",
+    "whatitdoes": "Adds a Rio De Janeiro instagram filter over an image, supports images and videos",
     "altnames": [
       "rj",
       "rio",
@@ -21,7 +30,7 @@
     ]
   },
   "toaudio": {
-    "whatitdoes": "Converts a video to a mp3",
+    "whatitdoes": "Converts a video to a mp3, supports videos",
     "altnames": [
       "toaudio",
       "2audio",
@@ -30,7 +39,7 @@
     ]
   },
   "togif": {
-    "whatitdoes": "Converts a video to a gif",
+    "whatitdoes": "Converts a video to a gif, supports videos",
     "altnames": [
       "togif",
       "gif",
@@ -38,7 +47,7 @@
     ]
   },
   "toimage": {
-    "whatitdoes": "Converts all video frames to images",
+    "whatitdoes": "Converts all video frames to images, supports videos",
     "altnames": [
       "toimage",
       "toimg",

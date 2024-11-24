@@ -77,15 +77,15 @@
   },
   "togif": {
     "file": "toGIF.js",
-    "isChainable": false
+    "isChainable": true
   },
   "gif": {
     "file": "toGIF.js",
-    "isChainable": false
+    "isChainable": true
   },
   "2gif": {
     "file": "toGIF.js",
-    "isChainable": false
+    "isChainable": true
   },
   "toimage": {
     "file": "toIMAGE.js",

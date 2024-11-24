@@ -1,6 +1,6 @@
 const altnames = ['audio', 'aa', 'audioanalyze', 'speech2text', 's2t', 'stt'];
 const isChainable = false;
-const whatitdo = 'transcribes audio/video to text';
+const whatitdo = 'transcribes audio/video to text, supports audio and video';
 
 const dotenv = require('dotenv');
 dotenv.config();

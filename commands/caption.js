@@ -1,163 +1,168 @@
 const altnames = ['caption', 'cap', 'text', 'txt'];
 const isChainable = true;
-const dotenv = require('dotenv');
+const whatitdo = 'Adds a caption to an image, supports images and videos';
+
 const fs = require('fs');
 const axios = require('axios');
+const dotenv = require('dotenv').config();
 const sharp = require('sharp');
-const TextToSVG = require('text-to-svg');
-
-dotenv.config();
-
-async function addCaption(imageBuffer, caption, position, originalImagePath, overlaidImagePath) {
-    const MIN_FONT_SIZE = 20;
-
-    fs.writeFileSync(originalImagePath, imageBuffer);
-
-    const originalImageMetadata = await sharp(originalImagePath).metadata();
-    const { width, height } = originalImageMetadata;
-    const FONT_SIZE = Math.ceil(Math.min(Math.max(width / 10, MIN_FONT_SIZE)));
-
-    console.log('Font size:', FONT_SIZE);
-
-    const maxCharsPerLine = Math.floor(width / (FONT_SIZE / 2));
-    const lines = [];
-    let line = '';
-    for (const word of caption.split(' ')) {
-        if (word.length > maxCharsPerLine) {
-            let remainingWord = word;
-            while (remainingWord.length > maxCharsPerLine) {
-                const splitWord = remainingWord.slice(0, maxCharsPerLine);
-                lines.push(splitWord.trim());
-                remainingWord = remainingWord.slice(maxCharsPerLine);
-            }
-            line += remainingWord + ' ';
-        } else if (line.length + word.length <= maxCharsPerLine) {
-            line += word + ' ';
-        } else {
-            lines.push(line.trim());
-            line = word + ' ';
-        }
-    }
-    lines.push(line.trim());
-
-    console.log('Max characters per line:', maxCharsPerLine);
-    console.log('Lines:', lines);
-
-    const textToSVG = TextToSVG.loadSync("fonts/Futura.ttf");
-    const images = [];
-
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-
-        const lineNew = textToSVG.getSVG(line, {
-            fontSize: FONT_SIZE,
-            anchor: "centre top",
-            attributes: { fill: "black" },
-        });
-
-        await sharp(Buffer.from(lineNew)).toFile(`temp/line${i}.png`);
-
-        const imageMetadata = await sharp(`temp/line${i}.png`).metadata();
-
-        console.log('original image width:', width);
-        console.log('imageMetadata width:', imageMetadata.width);
-        console.log('imageMetadata height:', imageMetadata.height);
-
-        const leftOffset = Math.round((width - imageMetadata.width) / 2);
-        console.log('left offset:', leftOffset);
-
-        const boxHeight = Math.round(imageMetadata.height);
-        const boxWidth = width;
-
-        await sharp({
-            create: {
-                width: boxWidth,
-                height: boxHeight,
-                channels: 4,
-                background: { r: 255, g: 255, b: 255, alpha: 0 }
-            }
-        })
-        .toFile(`temp/box${i}-white.png`);
-
-        await sharp(`temp/box${i}-white.png`)
-            .composite([{ input: `temp/line${i}.png`, top: 5, left: leftOffset }])
-            .toFile(`temp/line${i}-composite.png`);
-
-        sharp.cache(false);
-        fs.unlinkSync(`temp/line${i}.png`);
-        fs.unlinkSync(`temp/box${i}-white.png`);
-
-        images.push(`temp/line${i}-composite.png`);
-    }
-
-    let topExtend = 0;
-    let bottomExtend = 0;
-
-    if (position === 'top') {
-        topExtend = images.length * Math.round(FONT_SIZE * 1.5);
-    } else {
-        bottomExtend = images.length * Math.round(FONT_SIZE * 1.5);
-    }
-
-    await sharp(originalImagePath)
-        .extend({
-            top: topExtend,
-            bottom: bottomExtend,
-            left: 0,
-            right: 0,
-            background: { r: 255, g: 255, b: 255, alpha: 1 }
-        })
-        .composite(images.map((image, idx) => ({
-            input: image,
-            top: position === 'top' ? idx * Math.round(FONT_SIZE * 1.5) : height + (idx * Math.round(FONT_SIZE * 1.5)),
-            left: 0,
-        })))
-        .toFile(overlaidImagePath);
-
-    images.forEach(image => fs.unlinkSync(image));
-}
+const path = require('path');
+const { generate } = require('text-to-image');
+const ffmpeg = require('fluent-ffmpeg');
 
 module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained, userID) {
-
-        const attachment = currentAttachments.first() || message.attachments.first();
-        if (!attachment) {
+        const hasAttachment = currentAttachments || message.attachments;
+        const firstAttachment = hasAttachment.first();
+        const isImage = firstAttachment && firstAttachment.contentType.includes('image') || firstAttachment.contentType.includes('video');
+        if (message.content.includes('help')) {
+            return message.reply({
+                content: 'Adds a **caption** to an image\n' +
+                    'Arguments: `caption:text` where text is the caption you want to add\n' +
+                    'Available alt names:`' + `${altnames.join(', ')}` + '`',
+            });
+        } else if (!isImage) {
             return message.reply({ content: 'Please provide an audio or video file to process.' });
         }
+        const args = message.content.split(' ');
 
-        console.log('Processing Attachment:', attachment);
+        if (args.length > 1 && args[1].includes(':')) {
+            const parts = message.content.split(':');
+            if (parts.length >= 2) {
+                customText = parts.slice(1).join(':');
+            }
+            console.log('Custom Text:', customText);
+        } else {
+            return message.reply({ content: 'Please provide a caption in the format `caption:text`.' });
+        }
 
-        const randomName = userID;
-        const originalImagePath = `temp/${randomName}-CAPTION.jpg`;
-        const overlaidImagePath = `temp/${randomName}-CAPTION-OVERLAID.jpg`;
+        const attachmentURL = firstAttachment.url;
 
         try {
-            const image = await axios.get(attachment.url);
-            const imageUrl = image.url;
-            const contentType = image.contentType;
-            const [attachmentType, extension] = contentType.split('/');
+            const userName = userID;
+            const rnd5dig = Math.floor(Math.random() * 90000) + 10000;
+            const customizedText = customText;
 
-            if (attachmentType === 'video') {
-                await interaction.reply({
-                    embeds: [{ title: 'videos are not supported', color: 0xff0000 }],
-                    ephemeral: true
+            // Download the base image
+            const downloadAttachment = await axios.get(attachmentURL, { responseType: 'arraybuffer' });
+            const originalAttachmentPath = `temp/${userName}-CAP-${rnd5dig}.${attachmentURL.split('.').pop().split('?')[0]}`;
+            fs.writeFileSync(originalAttachmentPath, downloadAttachment.data);
+
+            // Get image/video dimensions using ffprobe for text positioning
+            const getDimensions = () => {
+                return new Promise((resolve, reject) => {
+                    ffmpeg.ffprobe(originalAttachmentPath, (err, metadata) => {
+                        if (err) return reject(err);
+                        const stream = metadata.streams.find(s => s.width && s.height);
+                        if (stream) {
+                            resolve({ width: stream.width, height: stream.height });
+                        } else {
+                            reject(new Error('No stream with width and height found'));
+                        }
+                    });
                 });
-                return;
-            } else {
-                await interaction.deferReply({ ephemeral: true });
-            }
+            };
 
-            const imageBuffer = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+            const { width, height } = await getDimensions();
+            // console.log('Width:', width + ' Height:', height);
 
-            await addCaption(imageBuffer.data, caption, position, originalImagePath, overlaidImagePath);
+            const fontPath = 'fonts/Impact.ttf';
+            const overlaidAttachmentPath = `temp/${userName}-CAPFINAL-${rnd5dig}.png`;
 
-            await interaction.followUp({ files: [overlaidImagePath] });
+            // get the lenght of the text to calculate the font size
+            const textLength = customizedText.length;
+            console.log('Text Length:', textLength);
+
+            // calculate the font size based on the length of the words to fit them in, minimum size is 26px max is 60px
+            const fontSize = Math.max(Math.min(60, (width / textLength) * 1.5), 26);
+            console.log('Font Size:', fontSize);
+
+            // Call function to overlay image and text
+             await overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, userName, rnd5dig, customizedText);
+
+            const imageURL = process.env.UPLOADURL + userName + `-RIOFINAL-${rnd5dig}.png`;
+            // console.log('Final Image:', imageURL);
+            return imageURL;
 
         } catch (error) {
             console.error('Error processing the image:', error);
-            if (!interaction.deferred) {
-                await interaction.followUp('There was an error processing the image. Please try again later.');
-            }
+            return message.reply({ content: `Error processing the image: ${error}`, ephemeral: true });
         }
     }
 };
+
+async function overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, userName, rnd5dig, customizedText) {
+    try {
+        // Generate text image using 'text-to-image' module
+        const dataUri = await generate(customizedText, {
+            debug: true,
+            maxWidth: width,
+            fontSize: fontSize,
+            fontPath: fontPath,
+            fontFamily: 'Impact',
+            lineHeight: fontSize * 1.4,
+            bgColor: 'white',
+            textColor: 'black',
+            textAlign: 'center',
+            verticalAlign: 'center',
+            margin: 10,
+        });
+        const base64Data = dataUri.replace(/^data:image\/png;base64,/, '');
+        fs.writeFileSync(`temp/${userName}-CAPTEXT-${rnd5dig}.png`, base64Data, 'base64');
+
+        // use ffprobe to get the text image height and extend the attachment height to fit the text image (both video/image)
+        const getDimensions = () => {
+            return new Promise((resolve, reject) => {
+                ffmpeg.ffprobe(`temp/${userName}-CAPTEXT-${rnd5dig}.png`, (err, metadata) => {
+                    if (err) return reject(err);
+                    const stream = metadata.streams.find(s => s.height);
+                    if (stream) {
+                        resolve(stream.height);
+                    } else {
+                        reject(new Error('No stream with height found'));
+                    }
+                });
+            });
+        };
+
+        const height = await getDimensions();
+        console.log('Height:', height);
+
+        // use ffmpeg for video and add a white box above the video witt the height of "const height"
+        const extendedAttachmentPath = `temp/${userName}-CAPSTRETCH-${rnd5dig}.png`;
+        if (originalAttachmentPath.includes('mp4')) {
+            await ffmpeg(originalAttachmentPath)
+                .input(`temp/${userName}-CAPTEXT-${rnd5dig}.png`)
+                .complexFilter([
+                    // Pad the video with white box on top
+                    `[0:v]pad=iw:ih+${height}:0:${height}:color=white[padded]`,
+                    // Overlay the text/image on the padded video
+                    `[padded][1:v]overlay=0:0`
+                ])
+                .output(`temp/${userName}-CAPFINAL-${rnd5dig}.mp4`)
+                .run();
+        } else {
+            sharp.cache(false);
+            // use sharp to extend the attachment height
+            await sharp(originalAttachmentPath)
+                .extend({ top: height, bottom: 0, left: 0, right: 0, background: { r: 255, g: 255, b: 255, alpha: 0 } })
+                .toFile(extendedAttachmentPath);
+
+            // get CAPTEXT and overlay on top of extendedAttachment
+            await sharp(extendedAttachmentPath)
+                .composite([{ input: `temp/${userName}-CAPTEXT-${rnd5dig}.png`, gravity: 'north' }])
+                .toFile(overlaidAttachmentPath);
+        }
+    } catch (error) {
+        console.error('Error overlaying image and text:', error);
+        return message.reply({ content: `Error overlaying image and text: ${error}`, ephemeral: true });
+    } finally {
+        setTimeout(() => {
+            fs.unlinkSync(`temp/${userName}-CAPTEXT-${rnd5dig}.png`);
+            fs.unlinkSync(originalAttachmentPath);
+        }, 2000);
+        if (!originalAttachmentPath.includes('mp4')) {
+            fs.unlinkSync(`temp/${userName}-CAPSTRETCH-${rnd5dig}.png`);
+        }
+    }
+}

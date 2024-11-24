@@ -1,6 +1,6 @@
 const altnames = ['toaudio', '2audio', 'toaud', '2aud']
 const isChainable = false;
-const whatitdo = 'Converts a video to a mp3';
+const whatitdo = 'Converts a video to a mp3, supports videos';
 
 const dotenv = require('dotenv');
 dotenv.config();
