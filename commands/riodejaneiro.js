@@ -21,8 +21,15 @@ module.exports = {
                     'Arguments: `rio:intesity` where intensity is a number between 2 and 8. (default is 5)\nrio:customtext` where customtext is any different text you want (can be combined with intesity)\n' +
                     'Available alt names:`' + `${altnames.join(', ')}` + '`',
             });
-        } else if (!isImage) {
+        } else if (!isImage || !firstAttachment) {
             return message.reply({ content: 'Please provide an audio or video file to process.' });
+            // else if its a gif
+        } else if (firstAttachment.contentType.includes('gif')) {
+            message.reply({ content: 'gifs will be converted to mp4, fuck you thats why' }).then(sentMessage => {
+                setTimeout(() => {
+                    sentMessage.delete();
+                }, 2000);
+            });
         }
         const args = message.content.split(' ');
         let intensityDecimal = 0.5; // Default intensity
@@ -50,6 +57,7 @@ module.exports = {
         }
 
         const attachmentURL = firstAttachment.url;
+        console.log('Attachment URL:', attachmentURL);
 
         try {
             const userName = userID;
@@ -57,10 +65,27 @@ module.exports = {
             const rnd5dig = Math.floor(Math.random() * 90000) + 10000;
             const customizedText = customText ? customText : 'Rio De Janeiro';
 
-            // Download the base image
+            // Download the base attachment, convert gifs to mp4
             const downloadAttachment = await axios.get(attachmentURL, { responseType: 'arraybuffer' });
-            const originalAttachmentPath = `temp/${userName}-RIO-${rnd5dig}.${attachmentURL.split('.').pop().split('?')[0]}`;
+            let originalAttachmentPath = `temp/${userName}-RIO-${rnd5dig}.${attachmentURL.split('.').pop().split('?')[0]}`;
             fs.writeFileSync(originalAttachmentPath, downloadAttachment.data);
+
+            if (attachmentURL.includes('.gif')) {
+                const gifToMp4Path = `temp/${userName}-RIO-${rnd5dig}.mp4`;
+                await new Promise((resolve, reject) => {
+                    ffmpeg(originalAttachmentPath)
+                        .outputOptions('-movflags', 'faststart')
+                        .output(gifToMp4Path)
+                        .on('end', resolve)
+                        .on('error', reject)
+                        .run();
+                });
+                originalAttachmentPath = gifToMp4Path;
+            } else if (attachmentURL.includes('.webp')) {
+                const webpToPngPath = `temp/${userName}-RIO-${rnd5dig}.png`;
+                await sharp(originalAttachmentPath).toFile(webpToPngPath);
+                originalAttachmentPath = webpToPngPath;
+            }
 
             // Get image/video dimensions using ffprobe for text positioning
             const getDimensions = () => {
@@ -91,7 +116,6 @@ module.exports = {
             await overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, opacity, userName, rnd5dig, customizedText);
 
             const imageURL = process.env.UPLOADURL + userName + `-RIOFINAL-${rnd5dig}.png`;
-            // console.log('Final Image:', imageURL);
             return imageURL;
 
         } catch (error) {

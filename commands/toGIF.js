@@ -85,6 +85,7 @@ module.exports = {
                 return message.reply({ content: 'Error converting video to gif' });
             } finally {
                 fs.unlinkSync(`temp/${userName}-TOGIFCONV-${rnd5dig}.${contentType}`);
+                message.reactions.removeAll().catch(console.error);
             }
         }
     }
@@ -136,10 +137,10 @@ module.exports = {
             });
 
             const durfpstable = [
-                [10, 10],
-                [15, 8],
-                [20, 6],
-                [30, 4]
+                [10, 20],
+                [18, 15],
+                [24, 10],
+                [30, 8]
             ]
             
             console.log('using this option:', durfpstable.find(([dur]) => duration < dur)[1]);
