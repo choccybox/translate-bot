@@ -134,12 +134,6 @@ client.once('ready', async () => {
     fs.mkdirSync(tempDir);
   }
 
-  // Delete files that don't include 'FINAL'
-  files.forEach(file => {
-    const filePath = path.join(tempDir, file);
-    fs.rmSync(filePath, { force: true });
-  });
-
   console.log(`wake yo ass up bc it's time to go beast mode`);
 });
 
