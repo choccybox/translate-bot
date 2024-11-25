@@ -1,106 +1,80 @@
 {
   "audio": {
-    "file": "audioAnalyze.js",
-    "isChainable": false
+    "file": "audioAnalyze.js"
   },
   "aa": {
-    "file": "audioAnalyze.js",
-    "isChainable": false
+    "file": "audioAnalyze.js"
   },
   "audioanalyze": {
-    "file": "audioAnalyze.js",
-    "isChainable": false
+    "file": "audioAnalyze.js"
   },
   "speech2text": {
-    "file": "audioAnalyze.js",
-    "isChainable": false
+    "file": "audioAnalyze.js"
   },
   "s2t": {
-    "file": "audioAnalyze.js",
-    "isChainable": false
+    "file": "audioAnalyze.js"
   },
   "stt": {
-    "file": "audioAnalyze.js",
-    "isChainable": false
+    "file": "audioAnalyze.js"
   },
   "caption": {
-    "file": "caption.js",
-    "isChainable": true
+    "file": "caption.js"
   },
   "cap": {
-    "file": "caption.js",
-    "isChainable": true
+    "file": "caption.js"
   },
   "text": {
-    "file": "caption.js",
-    "isChainable": true
+    "file": "caption.js"
   },
   "txt": {
-    "file": "caption.js",
-    "isChainable": true
+    "file": "caption.js"
   },
   "rj": {
-    "file": "riodejaneiro.js",
-    "isChainable": true
+    "file": "riodejaneiro.js"
   },
   "rio": {
-    "file": "riodejaneiro.js",
-    "isChainable": true
+    "file": "riodejaneiro.js"
   },
   "riodejaneiro": {
-    "file": "riodejaneiro.js",
-    "isChainable": true
+    "file": "riodejaneiro.js"
   },
   "rjd": {
-    "file": "riodejaneiro.js",
-    "isChainable": true
+    "file": "riodejaneiro.js"
   },
   "rdj": {
-    "file": "riodejaneiro.js",
-    "isChainable": true
+    "file": "riodejaneiro.js"
   },
   "toaudio": {
-    "file": "toAUDIO.js",
-    "isChainable": false
+    "file": "toAUDIO.js"
   },
   "2audio": {
-    "file": "toAUDIO.js",
-    "isChainable": false
+    "file": "toAUDIO.js"
   },
   "toaud": {
-    "file": "toAUDIO.js",
-    "isChainable": false
+    "file": "toAUDIO.js"
   },
   "2aud": {
-    "file": "toAUDIO.js",
-    "isChainable": false
+    "file": "toAUDIO.js"
   },
   "togif": {
-    "file": "toGIF.js",
-    "isChainable": true
+    "file": "toGIF.js"
   },
   "gif": {
-    "file": "toGIF.js",
-    "isChainable": true
+    "file": "toGIF.js"
   },
   "2gif": {
-    "file": "toGIF.js",
-    "isChainable": true
+    "file": "toGIF.js"
   },
   "toimage": {
-    "file": "toIMAGE.js",
-    "isChainable": false
+    "file": "toIMAGE.js"
   },
   "toimg": {
-    "file": "toIMAGE.js",
-    "isChainable": false
+    "file": "toIMAGE.js"
   },
   "2img": {
-    "file": "toIMAGE.js",
-    "isChainable": false
+    "file": "toIMAGE.js"
   },
   "2image": {
-    "file": "toIMAGE.js",
-    "isChainable": false
+    "file": "toIMAGE.js"
   }
 }

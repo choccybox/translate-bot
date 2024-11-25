@@ -1,5 +1,4 @@
 const altnames = ['rj', 'rio', 'riodejaneiro', 'rjd', 'rdj'];
-const isChainable = true;
 const whatitdo = 'Adds a Rio De Janeiro instagram filter over an image, supports images and videos';
 
 const fs = require('fs');
@@ -11,7 +10,7 @@ const { generate } = require('text-to-image');
 const ffmpeg = require('fluent-ffmpeg');
 
 module.exports = {
-    run: async function handleMessage(message, client, currentAttachments, isChained, userID) {
+    run: async function handleMessage(message, client, currentAttachments, isChained) {
         const hasAttachment = currentAttachments || message.attachments;
         const firstAttachment = hasAttachment.first();
         const isImage = firstAttachment && firstAttachment.contentType.includes('image') || firstAttachment.contentType.includes('video');
@@ -25,11 +24,7 @@ module.exports = {
             return message.reply({ content: 'Please provide an audio or video file to process.' });
             // else if its a gif
         } else if (firstAttachment.contentType.includes('gif')) {
-            message.reply({ content: 'gifs will be converted to mp4, fuck you thats why' }).then(sentMessage => {
-                setTimeout(() => {
-                    sentMessage.delete();
-                }, 2000);
-            });
+            return message.reply({ content: 'gifs will be converted to mp4, fuck you thats why' })
         }
         const args = message.content.split(' ');
         let intensityDecimal = 0.5; // Default intensity
@@ -52,15 +47,12 @@ module.exports = {
                     customText = parts.slice(2).join(':');
                 }
             }
-            console.log('Intensity:', intensityDecimal);
-            console.log('Custom Text:', customText);
         }
 
         const attachmentURL = firstAttachment.url;
-        console.log('Attachment URL:', attachmentURL);
 
         try {
-            const userName = userID;
+            const userName = message.author.id;
             const opacity = intensityDecimal;
             const rnd5dig = Math.floor(Math.random() * 90000) + 10000;
             const customizedText = customText ? customText : 'Rio De Janeiro';
@@ -69,23 +61,6 @@ module.exports = {
             const downloadAttachment = await axios.get(attachmentURL, { responseType: 'arraybuffer' });
             let originalAttachmentPath = `temp/${userName}-RIO-${rnd5dig}.${attachmentURL.split('.').pop().split('?')[0]}`;
             fs.writeFileSync(originalAttachmentPath, downloadAttachment.data);
-
-            if (attachmentURL.includes('.gif')) {
-                const gifToMp4Path = `temp/${userName}-RIO-${rnd5dig}.mp4`;
-                await new Promise((resolve, reject) => {
-                    ffmpeg(originalAttachmentPath)
-                        .outputOptions('-movflags', 'faststart')
-                        .output(gifToMp4Path)
-                        .on('end', resolve)
-                        .on('error', reject)
-                        .run();
-                });
-                originalAttachmentPath = gifToMp4Path;
-            } else if (attachmentURL.includes('.webp')) {
-                const webpToPngPath = `temp/${userName}-RIO-${rnd5dig}.png`;
-                await sharp(originalAttachmentPath).toFile(webpToPngPath);
-                originalAttachmentPath = webpToPngPath;
-            }
 
             // Get image/video dimensions using ffprobe for text positioning
             const getDimensions = () => {
@@ -103,20 +78,25 @@ module.exports = {
             };
 
             const { width, height } = await getDimensions();
-            // console.log('Width:', width + ' Height:', height);
 
             const fontPath = 'fonts/InstagramSans.ttf'; // Path to custom font file
             const overlaidAttachmentPath = `temp/${userName}-RIOOVERLAID-${rnd5dig}.png`;
+            const finalPath = `temp/${userName}-RIOFINAL-${rnd5dig}.${originalAttachmentPath.split('.').pop()}`;
 
             // set the font size to 1/10th of the image entire size
             const fontSize = Math.floor(Math.min(width, height) / 10);
-            // console.log('Font Size:', fontSize);
 
             // Call function to overlay image and text
             await overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, opacity, userName, rnd5dig, customizedText);
 
-            const imageURL = process.env.UPLOADURL + userName + `-RIOFINAL-${rnd5dig}.png`;
-            return imageURL;
+            await message.reply({
+                files: [{
+                    attachment: finalPath
+                }]
+            });
+
+             fs.unlinkSync(finalPath);
+            return
 
         } catch (error) {
             console.error('Error processing the image:', error);
@@ -127,12 +107,12 @@ module.exports = {
 
 async function overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, opacity, userName, rnd5dig, customizedText) {
     try {
+        sharp.cache(false);
         // Resize 'riodejaneiro.png' to match the specified width and height and set opacity
         const overlayImage = await sharp(`images/riodejaneiro.png`)
             .resize(width, height)
             .ensureAlpha(opacity)
             .toBuffer();
-            // console.log('resized overlay image');
             fs.writeFileSync(`temp/${userName}-RIOSTRETCH-${rnd5dig}.png`, overlayImage);
 
         // Generate text image using 'text-to-image' module
@@ -160,6 +140,7 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalAt
         
         // if file is a video, use ffmpeg to overlay the image over the video
         if (originalAttachmentPath.includes('mp4')) {
+            console.log('Overlaying image on video');
             const videoOutputPath = `temp/${userName}-RIOFINAL-${rnd5dig}.mp4`;
             await new Promise((resolve, reject) => {
                 ffmpeg(originalAttachmentPath)

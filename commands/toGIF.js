@@ -1,5 +1,4 @@
 const altnames = ['togif', 'gif', '2gif'];
-const isChainable = true;
 const whatitdo = 'Converts a video to a gif, supports videos';
 
 const dotenv = require('dotenv');
@@ -9,12 +8,10 @@ const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
 
 module.exports = {
-    run: async function handleMessage(message, client, currentAttachments, isChained, userID) {
+    run: async function handleMessage(message, client, currentAttachments, isChained) {
         const hasAttachment = currentAttachments || message.attachments;
         const firstAttachment = hasAttachment.first();
-        const isVideo = firstAttachment && firstAttachment.contentType.includes('video');
-        console.log('hasAttachment:', hasAttachment);
-        console.log('isVideo:', isVideo);
+        const isVideo = firstAttachment && firstAttachment.contentType.includes('video') || firstAttachment.contentType.includes('image');
         if (message.content.includes('help')) {
             return message.reply({
                 content: `**converts a video to a gif**\n` +
@@ -28,7 +25,7 @@ module.exports = {
         } else {
             const attachment = firstAttachment;
             const fileUrl = attachment.url;
-            const userName = userID;
+            const userName = message.author.id;
             const actualUsername = message.author.username;
             const fileType = attachment.contentType;
             const contentType = attachment.contentType.split('/')[1];
@@ -58,9 +55,6 @@ module.exports = {
             const downloadFile = await axios.get(fileUrl, { responseType: 'arraybuffer' });
             const fileData = downloadFile.data;
             await fs.writeFileSync(`temp/${userName}-TOGIFCONV-${rnd5dig}.${contentType}`, fileData);
-
-            console.log('Downloaded File:', `${userName}-TOGIFCONV-${rnd5dig}.${contentType}`);
-            console.log('file type:', fileType);
 
             const duration = await new Promise((resolve, reject) => {
                 ffmpeg.ffprobe(`temp/${userName}-TOGIFCONV-${rnd5dig}.${contentType}`, (err, metadata) => {
@@ -111,7 +105,7 @@ module.exports = {
 
             ffmpegCommand.on('progress', async (progress) => {
                 const currentTime = Date.now();
-                if (currentTime - lastUpdateTime >= 1000) {
+                if (currentTime - lastUpdateTime >= 3000) {
                     if (firstUpdate && (currentTime - startTime >= 1000)) {
                         const percent = progress.percent ? progress.percent.toFixed(1) : 0;
                         const elapsedTime = (currentTime - startTime) / 1000;
@@ -143,22 +137,20 @@ module.exports = {
                 [30, 8]
             ]
             
-            console.log('using this option:', durfpstable.find(([dur]) => duration < dur)[1]);
-
             ffmpegCommand
                 .fps(durfpstable.find(([dur]) => duration < dur)[1])
                 .outputOptions([
                     '-vf', `scale=${width}:${height}:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=256[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5`
                 ])
-                .on('start', (commandLine) => console.log('Started FFmpeg with command:', commandLine))
+                /* .on('start', (commandLine) => console.log('Started FFmpeg with command:', commandLine)) */
                 .on('end', () => {
-                    const finalURL = process.env.UPLOADURL + userName + '-GIFFINAL-' + rnd5dig + '.gif';
                     if (progressMessage) {
-                        progressMessage.edit({ content: finalURL }).catch(console.error);
+                        progressMessage.edit({ 
+                            content: '', 
+                            files: [{ attachment: outputPath }] }).catch(console.error);
                     } else {
-                        message.reply({ content: finalURL });
+                        message.reply({ files: [{ attachment: outputPath }] }).catch(console.error);
                     }
-                    console.log('GIF file:', outputPath);
                     resolve(outputPath);
                 })
                 .on('error', (err) => {

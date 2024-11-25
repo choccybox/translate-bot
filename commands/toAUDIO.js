@@ -1,5 +1,4 @@
 const altnames = ['toaudio', '2audio', 'toaud', '2aud']
-const isChainable = false;
 const whatitdo = 'Converts a video to a mp3, supports videos';
 
 const dotenv = require('dotenv');
@@ -9,12 +8,10 @@ const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
 
 module.exports = {
-    run: async function handleMessage(message, client, currentAttachments, isChained, userID) {
+    run: async function handleMessage(message, client, currentAttachments, isChained) {
         const hasAttachment = currentAttachments || message.attachments;
         const firstAttachment = hasAttachment.first();
         const isVideo = firstAttachment && firstAttachment.contentType.includes('video');
-        console.log('hasAttachment:', hasAttachment);
-        console.log('isVideo:', isVideo);
         if (message.content.includes('help')) {
             return message.reply({
                 content: `**converts a video to a mp3**\n` +
@@ -25,7 +22,7 @@ module.exports = {
         } else {
             const attachment = firstAttachment;
             const fileUrl = attachment.url;
-            const userName = userID;
+            const userName = message.author.id;
             const fileType = attachment.contentType;
             const contentType = attachment.contentType.split('/')[1];
             const rnd5dig = Math.floor(Math.random() * 90000) + 10000;
@@ -33,9 +30,6 @@ module.exports = {
             const downloadFile = await axios.get(fileUrl, { responseType: 'arraybuffer' });
             const fileData = downloadFile.data;
             await fs.writeFileSync(`temp/${userName}-TOMP3CONV-${rnd5dig}.${contentType}`, fileData);
-
-            console.log('Downloaded File:', `${userName}-TOMP3CONV-${rnd5dig}.${contentType}`);
-            console.log('file type:', fileType);
 
             try {
                 await convertToAudio(message, userName, contentType, rnd5dig);
@@ -59,14 +53,13 @@ module.exports = {
                 .outputOptions(['-y']);
 
             ffmpegCommand
-                .on('start', (commandLine) => console.log('Started FFmpeg with command:', commandLine))
+                /* .on('start', (commandLine) => console.log('Started FFmpeg with command:', commandLine)) */
                 .on('end', () => {
                     message.reply({
                         files: [{
                             attachment: outputPath
                         }]
                     }).then(() => {
-                        console.log('Audio file:', outputPath);
                         resolve(outputPath);
                     }).catch(reject);
                 })

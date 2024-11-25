@@ -1,5 +1,4 @@
 const altnames = ['caption', 'cap', 'text', 'txt'];
-const isChainable = true;
 const whatitdo = 'Adds a caption to an image, supports images and videos';
 
 const fs = require('fs');
@@ -11,7 +10,7 @@ const { generate } = require('text-to-image');
 const ffmpeg = require('fluent-ffmpeg');
 
 module.exports = {
-    run: async function handleMessage(message, client, currentAttachments, isChained, userID) {
+    run: async function handleMessage(message, client, currentAttachments, isChained) {
         const hasAttachment = currentAttachments || message.attachments;
         const firstAttachment = hasAttachment.first();
         const isImage = firstAttachment && firstAttachment.contentType.includes('image') || firstAttachment.contentType.includes('video');
@@ -31,7 +30,6 @@ module.exports = {
             if (parts.length >= 2) {
                 customText = parts.slice(1).join(':');
             }
-            console.log('Custom Text:', customText);
         } else {
             return message.reply({ content: 'Please provide a caption in the format `caption:text`.' });
         }
@@ -39,7 +37,7 @@ module.exports = {
         const attachmentURL = firstAttachment.url;
 
         try {
-            const userName = userID;
+            const userName = message.author.id;
             const rnd5dig = Math.floor(Math.random() * 90000) + 10000;
             const customizedText = customText;
 
@@ -64,25 +62,23 @@ module.exports = {
             };
 
             const { width, height } = await getDimensions();
-            // console.log('Width:', width + ' Height:', height);
-
             const fontPath = 'fonts/Impact.ttf';
             const overlaidAttachmentPath = `temp/${userName}-CAPFINAL-${rnd5dig}.png`;
 
             // get the lenght of the text to calculate the font size
             const textLength = customizedText.length;
-            console.log('Text Length:', textLength);
 
             // calculate the font size based on the length of the words to fit them in, minimum size is 26px max is 60px
             const fontSize = Math.max(Math.min(60, (width / textLength) * 1.5), 26);
-            console.log('Font Size:', fontSize);
 
             // Call function to overlay image and text
              await overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, userName, rnd5dig, customizedText);
 
-            const imageURL = process.env.UPLOADURL + userName + `-RIOFINAL-${rnd5dig}.png`;
-            // console.log('Final Image:', imageURL);
-            return imageURL;
+            return message.reply ({
+                files: [{
+                    attachment: overlaidAttachmentPath
+                }]
+            });
 
         } catch (error) {
             console.error('Error processing the image:', error);
@@ -126,7 +122,6 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalAt
         };
 
         const height = await getDimensions();
-        console.log('Height:', height);
 
         // use ffmpeg for video and add a white box above the video witt the height of "const height"
         const extendedAttachmentPath = `temp/${userName}-CAPSTRETCH-${rnd5dig}.png`;

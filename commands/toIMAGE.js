@@ -1,5 +1,4 @@
 const altnames = ['toimage', 'toimg', '2img', '2image'];
-const isChainable = false;
 const whatitdo = 'Converts all video frames to images, supports videos';
 
 const dotenv = require('dotenv');
@@ -10,12 +9,10 @@ const ffmpeg = require('fluent-ffmpeg');
 const archiver = require('archiver');
 
 module.exports = {
-    run: async function handleMessage(message, client, currentAttachments, isChained, userID) {
+    run: async function handleMessage(message, client, currentAttachments, isChained) {
         const hasAttachment = currentAttachments || message.attachments;
         const firstAttachment = hasAttachment.first();
         const isVideo = firstAttachment && firstAttachment.contentType.includes('video');
-        console.log('hasAttachment:', hasAttachment);
-        console.log('isVideo:', isVideo);
         if (message.content.includes('help')) {
             return message.reply({
                 content: `**converts all video frames to images**\n` +
@@ -26,7 +23,7 @@ module.exports = {
         } else {
             const attachment = firstAttachment;
             const fileUrl = attachment.url;
-            const userName = userID;
+            const userName = message.author.id;
             const fileType = attachment.contentType;
             const contentType = attachment.contentType.split('/')[1];
             const rnd5dig = Math.floor(Math.random() * 90000) + 10000;
@@ -34,9 +31,6 @@ module.exports = {
             const downloadFile = await axios.get(fileUrl, { responseType: 'arraybuffer' });
             const fileData = downloadFile.data;
             await fs.writeFileSync(`temp/${userName}-TOIMGCONV-${rnd5dig}.${contentType}`, fileData);
-
-            console.log('Downloaded File:', `${userName}-TOIMGCONV-${rnd5dig}.${contentType}`);
-            console.log('file type:', fileType);
 
             try {
                 await convertToImages(message, userName, contentType, rnd5dig);
@@ -68,7 +62,7 @@ async function convertToImages(message, userName, contentType, rnd5dig) {
 
         const ffmpegCommand = ffmpeg(`temp/${userName}-TOIMGCONV-${rnd5dig}.${contentType}`)
             .outputOptions(['-q:v 31']) // Aggressively compress images
-            .on('start', (commandLine) => console.log('Started FFmpeg with command:', commandLine))
+            /* .on('start', (commandLine) => console.log('Started FFmpeg with command:', commandLine)) */
             .on('progress', async (progress) => {
                 const currentTime = Date.now();
                 const percent = progress.percent ? progress.percent.toFixed(1) : 0;
@@ -89,7 +83,6 @@ async function convertToImages(message, userName, contentType, rnd5dig) {
                 }
             })
             .on('end', async () => {
-                console.log('Finished extracting frames');
                 try {
                     await zipImages(outputDir, zipPath);
                     const stats = fs.statSync(zipPath);

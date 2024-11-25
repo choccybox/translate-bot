@@ -1,5 +1,4 @@
 const altnames = ['audio', 'aa', 'audioanalyze', 'speech2text', 's2t', 'stt'];
-const isChainable = false;
 const whatitdo = 'transcribes audio/video to text, supports audio and video';
 
 const dotenv = require('dotenv');
@@ -9,7 +8,7 @@ const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
 
 module.exports = {
-    run: async function handleMessage(message, client, currentAttachments, isChained, userID) {
+    run: async function handleMessage(message, client, currentAttachments, isChained) {
         const hasAttachment = currentAttachments || message.attachments;
         const firstAttachment = hasAttachment.first();
         const isVideoOrAudio = firstAttachment && (firstAttachment.contentType.includes('video') || firstAttachment.contentType.includes('audio'));
@@ -27,7 +26,7 @@ module.exports = {
             return message.reply({ content: 'Please provide an audio or video file to process.' });
         } else {
             const fileUrl = firstAttachment.url;
-            const randomName = userID;
+            const randomName = message.author.id;
             const contentType = firstAttachment.contentType.split('/')[1];
             const args = message.content.toLowerCase().split(' ');
             const rnd5dig = Math.floor(Math.random() * 90000) + 10000;
@@ -52,15 +51,12 @@ module.exports = {
             const fileExtension = contentType === 'mpeg' ? 'mp3' : contentType;
             const fileName = firstAttachment.name;
             await fs.writeFileSync(`temp/${randomName}-S2T-${rnd5dig}.${fileExtension}`, fileData);
-    
-            console.log('Downloaded File:', `${randomName}-S2T-${rnd5dig}.${fileExtension}`);
-    
+        
             try {
                 if (firstAttachment.contentType.startsWith('video/') && contentType !== 'mp3') {
                     ffmpeg(`temp/${randomName}-S2T-${rnd5dig}.${contentType}`)
                         .toFormat('mp3')
                         .on('end', function () {
-                            console.log('Audio file created');
                             const audioData = fs.readFileSync(`temp/${randomName}-S2T-${rnd5dig}.mp3`);
                             const base64Audio = `data:audio/mp3;base64,${audioData.toString('base64')}`;
                             processAudio(base64Audio, message, randomName, fileName, model);
@@ -89,14 +85,11 @@ async function processAudio(base64Audio, message, randomName, fileName, model, r
             turbo: 'openai/whisper-large-v3-turbo',
             large: 'openai/whisper-large-v3-turbo',
         };
-        console.log('using model:', abrmodelstomodelnames[model]);
+        // console.log('using model:', abrmodelstomodelnames[model]);
         const deepInfraPrediction = await axios.post('https://api.deepinfra.com/v1/inference/' + abrmodelstomodelnames[model] ?? 'whisper-large-v3-turbo', {
             audio: base64Audio,
             authorization: process.env.DEEPINFRA_TOKEN,
         });
-        const runtimeDuration = deepInfraPrediction.data.inference_status.runtime_ms;
-        console.log(`The prediction took ${runtimeDuration}ms to complete.`);
-
         const predictionDuration = Math.ceil(deepInfraPrediction.data.inference_status.runtime_ms / 1000);
 
         const predictionSeconds = Math.floor(predictionDuration % 60);
@@ -111,19 +104,15 @@ async function processAudio(base64Audio, message, randomName, fileName, model, r
             formattedDuration = `${predictionSeconds.toString()}s`;
         }
 
-        console.log(`The prediction took ${formattedDuration} to complete.`);
-
         const predictionRawText = deepInfraPrediction.data.text;
 
         if (predictionRawText.length > 2000) {
-            console.log('Raw text too long, sending as a file');
             fs.writeFileSync(`./temp/${randomName}-S2T-${rnd5dig}.txt`, predictionRawText);
             message.reply({
                 content: 'Output is too long to be displayed as a message, it has been compressed into a text file.',
                 files: [`./temp/${randomName}-S2T-${rnd5dig}.txt`],
             });
         } else {
-            console.log('Raw text short, sending as a message');
             message.reply({
                 content: predictionRawText,
             });
