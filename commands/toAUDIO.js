@@ -32,6 +32,7 @@ module.exports = {
             await fs.writeFileSync(`temp/${userName}-TOMP3CONV-${rnd5dig}.${contentType}`, fileData);
 
             try {
+                message.react('<a:pukekospin:1311021344149868555>').catch(() => message.react('👍'));
                 await convertToAudio(message, userName, contentType, rnd5dig);
             } catch (err) {
                 console.error('Error:', err);
@@ -61,6 +62,10 @@ module.exports = {
                         }]
                     }).then(() => {
                         resolve(outputPath);
+                        // check if the bot has replied to the message
+                        if (message.channel.messages.cache.get(message.id)) {
+                            message.reactions.removeAll().catch(console.error);
+                        }
                     }).catch(reject);
                 })
                 .on('error', (err) => {

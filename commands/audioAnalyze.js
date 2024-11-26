@@ -54,22 +54,22 @@ module.exports = {
         
             try {
                 if (firstAttachment.contentType.startsWith('video/') && contentType !== 'mp3') {
-                    ffmpeg(`temp/${randomName}-S2T-${rnd5dig}.${contentType}`)
-                        .toFormat('mp3')
-                        .on('end', function () {
-                            const audioData = fs.readFileSync(`temp/${randomName}-S2T-${rnd5dig}.mp3`);
-                            const base64Audio = `data:audio/mp3;base64,${audioData.toString('base64')}`;
-                            processAudio(base64Audio, message, randomName, fileName, model);
-                        })
-                        .on('error', function (err) {
-                            console.log('Error:', err);
-                        })
-                        .save(`temp/${randomName}-S2T-${rnd5dig}.mp3`);
-                } else if (firstAttachment.contentType.startsWith('audio/')) {
-                    const audioData = fs.readFileSync(`temp/${randomName}-S2T-${rnd5dig}.mp3`);
-                    const base64Audio = `data:audio/${contentType};base64,${audioData.toString('base64')}`;
-                    processAudio(base64Audio, message, randomName, fileName, model, rnd5dig);
+                    await new Promise((resolve, reject) => {
+                        ffmpeg(`temp/${randomName}-S2T-${rnd5dig}.${contentType}`)
+                            .toFormat('mp3')
+                            .on('end', resolve)
+                            .on('error', reject)
+                            .save(`temp/${randomName}-S2T-${rnd5dig}.mp3`);
+                    });
                 }
+
+                const audioData = fs.readFileSync(`temp/${randomName}-S2T-${rnd5dig}.${contentType === 'mp3' ? 'mp3' : 'mp3'}`);
+                message.react('<a:pukekospin:1311021344149868555>').catch(() => message.react('👍'));
+                await processAudio(audioData.toString('base64'), message, randomName, fileName, model, rnd5dig);
+                if (message.channel.messages.cache.get(message.id)) {
+                    message.reactions.removeAll().catch(console.error);
+                }
+
             } catch (error) {
                 console.error('Error processing:', error);
                 return { attachments: null, error: 'Error processing the file.' };

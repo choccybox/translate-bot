@@ -87,6 +87,7 @@ module.exports = {
             const fontSize = Math.floor(Math.min(width, height) / 10);
 
             // Call function to overlay image and text
+            message.react('<a:pukekospin:1311021344149868555>').catch(() => message.react('👍'));
             await overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, opacity, userName, rnd5dig, customizedText);
 
             await message.reply({
@@ -94,8 +95,11 @@ module.exports = {
                     attachment: finalPath
                 }]
             });
+            if (message.channel.messages.cache.get(message.id)) {
+                message.reactions.removeAll().catch(console.error);
+            }
 
-             fs.unlinkSync(finalPath);
+            fs.unlinkSync(finalPath);
             return
 
         } catch (error) {

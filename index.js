@@ -129,10 +129,27 @@ fs.writeFileSync('./database/commandsdesc.json', JSON.stringify(whatitdo, null, 
 client.once('ready', async () => {
   const tempDir = './temp';
 
-  // check if temp directory exists, if not create it
+  // check if temp directory exists
   if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir);
   }
+
+  // clear all files in temp directory
+  fs.readdir(tempDir, (err, files) => {
+    if (err) {
+      console.error('Error reading temp directory:', err);
+      return;
+    }
+
+    for (const file of files) {
+      fs.unlink(path.join(tempDir, file), err => {
+        if (err) {
+          console.error('Error deleting file:', err);
+          return;
+        }
+      });
+    }
+  });
 
   console.log(`wake yo ass up bc it's time to go beast mode`);
 });

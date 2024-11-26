@@ -63,7 +63,7 @@ module.exports = {
 
             const { width, height } = await getDimensions();
             const fontPath = 'fonts/Impact.ttf';
-            const overlaidAttachmentPath = `temp/${userName}-CAPFINAL-${rnd5dig}.png`;
+            const overlaidAttachmentPath = `temp/${userName}-CAPFINAL-${rnd5dig}.${attachmentURL.split('.').pop().split('?')[0]}`;
 
             // get the lenght of the text to calculate the font size
             const textLength = customizedText.length;
@@ -72,13 +72,8 @@ module.exports = {
             const fontSize = Math.max(Math.min(60, (width / textLength) * 1.5), 26);
 
             // Call function to overlay image and text
-             await overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, userName, rnd5dig, customizedText);
-
-            return message.reply ({
-                files: [{
-                    attachment: overlaidAttachmentPath
-                }]
-            });
+            message.react('<a:pukekospin:1311021344149868555>').catch(() => message.react('👍'));
+            await overlayImageAndText(message, width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, userName, rnd5dig, customizedText);
 
         } catch (error) {
             console.error('Error processing the image:', error);
@@ -87,7 +82,7 @@ module.exports = {
     }
 };
 
-async function overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, userName, rnd5dig, customizedText) {
+async function overlayImageAndText(message, width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, userName, rnd5dig, customizedText) {
     try {
         // Generate text image using 'text-to-image' module
         const dataUri = await generate(customizedText, {
@@ -126,16 +121,19 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalAt
         // use ffmpeg for video and add a white box above the video witt the height of "const height"
         const extendedAttachmentPath = `temp/${userName}-CAPSTRETCH-${rnd5dig}.png`;
         if (originalAttachmentPath.includes('mp4')) {
+            console.log('Overlaying text on video');
             await ffmpeg(originalAttachmentPath)
                 .input(`temp/${userName}-CAPTEXT-${rnd5dig}.png`)
                 .complexFilter([
-                    // Pad the video with white box on top
                     `[0:v]pad=iw:ih+${height}:0:${height}:color=white[padded]`,
-                    // Overlay the text/image on the padded video
                     `[padded][1:v]overlay=0:0`
                 ])
                 .output(`temp/${userName}-CAPFINAL-${rnd5dig}.mp4`)
-                .run();
+                .run()
+                .on('end', () => {
+                    message.reply({ files: [overlaidAttachmentPath] });
+                    message.reactions.removeAll().catch(console.error);
+                });
         } else {
             sharp.cache(false);
             // use sharp to extend the attachment height
@@ -147,17 +145,15 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalAt
             await sharp(extendedAttachmentPath)
                 .composite([{ input: `temp/${userName}-CAPTEXT-${rnd5dig}.png`, gravity: 'north' }])
                 .toFile(overlaidAttachmentPath);
+
+            message.reply({ files: [overlaidAttachmentPath] });
+            message.reactions.removeAll().catch(console.error);
         }
     } catch (error) {
         console.error('Error overlaying image and text:', error);
-        return message.reply({ content: `Error overlaying image and text: ${error}`, ephemeral: true });
+        message.reply({ content: `Error overlaying image and text: ${error}`, ephemeral: true });
+        return;
     } finally {
-        setTimeout(() => {
-            fs.unlinkSync(`temp/${userName}-CAPTEXT-${rnd5dig}.png`);
-            fs.unlinkSync(originalAttachmentPath);
-        }, 2000);
-        if (!originalAttachmentPath.includes('mp4')) {
-            fs.unlinkSync(`temp/${userName}-CAPSTRETCH-${rnd5dig}.png`);
-        }
+
     }
 }

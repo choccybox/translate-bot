@@ -29,6 +29,14 @@
       "rdj"
     ]
   },
+  "speechbubble": {
+    "whatitdoes": "adds a speechbubble on top of an image/video, supports images and videos",
+    "altnames": [
+      "speechbubble",
+      "spchbbl",
+      "sb"
+    ]
+  },
   "toaudio": {
     "whatitdoes": "Converts a video to a mp3, supports videos",
     "altnames": [
