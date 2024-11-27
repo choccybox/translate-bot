@@ -47,10 +47,16 @@
   "speechbubble": {
     "file": "speechbubble.js"
   },
-  "spchbbl": {
+  "spchb": {
     "file": "speechbubble.js"
   },
   "sb": {
+    "file": "speechbubble.js"
+  },
+  "speech": {
+    "file": "speechbubble.js"
+  },
+  "spch": {
     "file": "speechbubble.js"
   },
   "toaudio": {

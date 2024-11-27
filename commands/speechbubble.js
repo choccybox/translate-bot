@@ -39,7 +39,7 @@ module.exports = {
                     const stream = metadata.streams.find(s => s.width) || metadata.streams.find(s => s.duration) || metadata.streams.find(s => s.height);
                     if (stream) {
                         resolve({
-                            duration: stream.duration,
+                            duration: stream.duration && contentType.includes('mp4') ? stream.duration : 0,
                             width: stream.width,
                             height: Math.floor(stream.height * 0.25),
                         });
@@ -48,6 +48,7 @@ module.exports = {
                     }
                 });
             });
+            console.log('width:', width, 'height:', height, 'duration:', duration);
 
             try {
                 message.react('<a:pukekospin:1311021344149868555>').catch(() => message.react('👍'));

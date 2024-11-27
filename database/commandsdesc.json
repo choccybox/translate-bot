@@ -33,8 +33,10 @@
     "whatitdoes": "adds a speechbubble on top of an image/video, supports images and videos",
     "altnames": [
       "speechbubble",
-      "spchbbl",
-      "sb"
+      "spchb",
+      "sb",
+      "speech",
+      "spch"
     ]
   },
   "toaudio": {
