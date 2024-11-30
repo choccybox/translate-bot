@@ -11,16 +11,17 @@ const ffmpeg = require('fluent-ffmpeg');
 
 module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained) {
-        const hasAttachment = currentAttachments || message.attachments;
-        const firstAttachment = hasAttachment.first();
-        const isImage = firstAttachment && firstAttachment.contentType.includes('image') || firstAttachment.contentType.includes('video');
         if (message.content.includes('help')) {
             return message.reply({
                 content: 'Adds a **Rio De Janeiro** instagram filter over an image\n' +
                     'Arguments: `rio:intesity` where intensity is a number between 2 and 8. (default is 5)\nrio:customtext` where customtext is any different text you want (can be combined with intesity)\n' +
                     'Available alt names:`' + `${altnames.join(', ')}` + '`',
             });
-        } else if (!isImage || !firstAttachment) {
+        }
+        const hasAttachment = currentAttachments || message.attachments;
+        const firstAttachment = hasAttachment.first();
+        const isImage = firstAttachment && firstAttachment.contentType.includes('image') || firstAttachment.contentType.includes('video');
+        if (!isImage || !firstAttachment) {
             return message.reply({ content: 'Please provide an audio or video file to process.' });
             // else if its a gif
         } else if (firstAttachment.contentType.includes('gif')) {
@@ -95,9 +96,7 @@ module.exports = {
                     attachment: finalPath
                 }]
             });
-            if (message.channel.messages.cache.get(message.id)) {
-                message.reactions.removeAll().catch(console.error);
-            }
+            message.reactions.removeAll().catch(console.error);
 
             fs.unlinkSync(finalPath);
             return

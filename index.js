@@ -41,7 +41,7 @@ client.on('messageCreate', async (message) => {
     } else if (!currentAttachments && message.content.includes('pukeko')) {
       message.reply({ files: [{ attachment: path.join(__dirname, 'images', 'pukeko.jpg') }] });
       return;
-    } else if (!currentAttachments && message.content.includes('help')) {
+    } else if (!currentAttachments && message.content.trim() === `<@${client.user.id}> help`) {
       // get the file commandsdesc.json and format it correctly into this order: command, whatitdoes, altnames
       const commandsDesc = require('./database/commandsdesc.json');
       const formattedCommands = Object.keys(commandsDesc).map(command => {
@@ -49,7 +49,7 @@ client.on('messageCreate', async (message) => {
       });
       const formattedCommandsString = formattedCommands.join('\n\n');
       message.reply({ content: `${formattedCommandsString}` });
-    }else if (!currentAttachments) {
+    }else if (!currentAttachments && message.content.trim() === `<@${client.user.id}>`) {
       message.reply({ content: 'Please provide an audio or video file to process.' });
       return;
     }

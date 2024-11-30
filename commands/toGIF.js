@@ -1,5 +1,5 @@
 const altnames = ['togif', 'gif', '2gif'];
-const whatitdo = 'Converts a video to a gif, supports videos';
+const whatitdo = 'Converts a video to a gif';
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -9,9 +9,6 @@ const ffmpeg = require('fluent-ffmpeg');
 
 module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained) {
-        const hasAttachment = currentAttachments || message.attachments;
-        const firstAttachment = hasAttachment.first();
-        const isVideo = firstAttachment && firstAttachment.contentType.includes('video') || firstAttachment.contentType.includes('image');
         if (message.content.includes('help')) {
             return message.reply({
                 content: `**converts a video to a gif**\n` +
@@ -20,7 +17,11 @@ module.exports = {
                     'tt - removes tiktok outro\n' +
                     'autocrop - automatically crops the video to get rid of black bars\n'
             });
-        } else if (!isVideo) {
+        }
+        const hasAttachment = currentAttachments || message.attachments;
+        const firstAttachment = hasAttachment.first();
+        const isVideo = firstAttachment && firstAttachment.contentType.includes('video') || firstAttachment.contentType.includes('image');
+        if (!isVideo) {
             return message.reply({ content: 'provide a video file to convert.' });
         } else {
             const attachment = firstAttachment;
@@ -73,9 +74,7 @@ module.exports = {
             try {
                 message.react('<a:pukekospin:1311021344149868555>').catch(() => message.react('👍'));
                 await convertToGIF(message, userName, actualUsername, contentType, rnd5dig, height, width, duration, autoCrop, removeTT);
-                if (message.channel.messages.cache.get(message.id)) {
-                    message.reactions.removeAll().catch(console.error);
-                }
+                message.reactions.removeAll().catch(console.error);
             } catch (err) {
                 console.error('Error:', err);
                 return message.reply({ content: 'Error converting video to gif' });

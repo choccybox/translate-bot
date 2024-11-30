@@ -11,15 +11,16 @@ const { error } = require('console');
 
 module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained) {
-        const hasAttachment = currentAttachments || message.attachments;
-        const firstAttachment = hasAttachment.first();
-        const isVideo = firstAttachment && firstAttachment.contentType.includes('video') || firstAttachment.contentType.includes('image');
         if (message.content.includes('help')) {
             return message.reply({
                 content: `**adds a speechbubble on top of an image/video**\n` +
                     `**Usage: ${altnames.join(', ')}\n`
             });
-        } else if (!isVideo) {
+        }
+        const hasAttachment = currentAttachments || message.attachments;
+        const firstAttachment = hasAttachment.first();
+        const isVideo = firstAttachment && firstAttachment.contentType.includes('video') || firstAttachment.contentType.includes('image');
+        if (!isVideo) {
             return message.reply({ content: 'provide a video file to convert.' });
         } else {
             const attachment = firstAttachment;
@@ -54,9 +55,7 @@ module.exports = {
                 message.react('<a:pukekospin:1311021344149868555>').catch(() => message.react('👍'));
                 await convertToGIF(userName, originalAttachmentPath, contentType, rnd5dig, width, height, duration);
                 message.reply({ files: [`temp/${userName}-SPCHFINAL-${rnd5dig}.gif`] });
-                if (message.channel.messages.cache.get(message.id)) {
-                    message.reactions.removeAll().catch(console.error);
-                }
+                message.reactions.removeAll().catch(console.error);
             } catch (err) {
                 console.error('Error:', err);
                 return message.reply({ content: 'Error converting video to gif' });
@@ -95,9 +94,9 @@ async function convertToGIF(userName, originalAttachmentPath, contentType, rnd5d
             ffmpeg(originalAttachmentPath)
                 .input(`temp/${userName}-SPCHSTRETCH-${rnd5dig}.png`)
                 .complexFilter([
-                    // Overlay the speech bubble on the video
-                    `[0:v][1:v]overlay=0:0,scale=iw/2:ih/2`,
+                    '[0:v][1:v]overlay=0:0[out]'
                 ])
+                .map('[out]')
                 .output(extendedAttachmentPath)
                 .on('end', resolve)
                 .on('error', reject)
@@ -110,7 +109,7 @@ async function convertToGIF(userName, originalAttachmentPath, contentType, rnd5d
             .toFile(extendedAttachmentPath);
     }
 
-    const durfpstable = [
+     const durfpstable = [
         [10, 20],
         [18, 15],
         [24, 10],

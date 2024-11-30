@@ -91,5 +91,17 @@
   },
   "2image": {
     "file": "toIMAGE.js"
+  },
+  "tovideo": {
+    "file": "toVIDEO.js"
+  },
+  "2video": {
+    "file": "toVIDEO.js"
+  },
+  "tovid": {
+    "file": "toVIDEO.js"
+  },
+  "2vid": {
+    "file": "toVIDEO.js"
   }
 }

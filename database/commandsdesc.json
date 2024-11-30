@@ -40,7 +40,7 @@
     ]
   },
   "toaudio": {
-    "whatitdoes": "Converts a video to a mp3, supports videos",
+    "whatitdoes": "Converts a video to a mp3",
     "altnames": [
       "toaudio",
       "2audio",
@@ -49,7 +49,7 @@
     ]
   },
   "togif": {
-    "whatitdoes": "Converts a video to a gif, supports videos",
+    "whatitdoes": "Converts a video to a gif",
     "altnames": [
       "togif",
       "gif",
@@ -57,12 +57,21 @@
     ]
   },
   "toimage": {
-    "whatitdoes": "Converts all video frames to images, supports videos",
+    "whatitdoes": "Converts all video frames to images",
     "altnames": [
       "toimage",
       "toimg",
       "2img",
       "2image"
+    ]
+  },
+  "tovideo": {
+    "whatitdoes": "Converts a gif to a video",
+    "altnames": [
+      "tovideo",
+      "2video",
+      "tovid",
+      "2vid"
     ]
   }
 }

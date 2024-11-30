@@ -1,5 +1,5 @@
-const altnames = ['toaudio', '2audio', 'toaud', '2aud']
-const whatitdo = 'Converts a video to a mp3';
+const altnames = ['tovideo', '2video', 'tovid', '2vid']
+const whatitdo = 'Converts a gif to a video'
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -11,7 +11,7 @@ module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained) {
         if (message.content.includes('help')) {
             return message.reply({
-                content: `**converts a video to a mp3**\n` +
+                content: `**converts a gif to a video**\n` +
                     `**Usage: ${altnames.join(', ')}\n`
             });
         }
@@ -30,7 +30,7 @@ module.exports = {
             
             const downloadFile = await axios.get(fileUrl, { responseType: 'arraybuffer' });
             const fileData = downloadFile.data;
-            await fs.writeFileSync(`temp/${userName}-TOMP3CONV-${rnd5dig}.${contentType}`, fileData);
+            await fs.writeFileSync(`temp/${userName}-TOVIDCONV-${rnd5dig}.${contentType}`, fileData);
 
             try {
                 message.react('<a:pukekospin:1311021344149868555>').catch(() => message.react('👍'));
@@ -39,23 +39,27 @@ module.exports = {
                 console.error('Error:', err);
                 return message.reply({ content: 'Error converting video to gif' });
             } finally {
-                fs.unlinkSync(`temp/${userName}-TOMP3CONV-${rnd5dig}.${contentType}`);
-                fs.unlinkSync(`temp/${userName}-AUDIOFINAL-${rnd5dig}.mp3`);
+                fs.unlinkSync(`temp/${userName}-TOVIDCONV-${rnd5dig}.${contentType}`);
+                fs.unlinkSync(`temp/${userName}-VIDEOFINAL-${rnd5dig}.mp4`);
             }
         }
     }
 }
 
     async function convertToAudio(message, userName, contentType, rnd5dig) {
-        const outputPath = `temp/${userName}-AUDIOFINAL-${rnd5dig}.mp3`;
+        const outputPath = `temp/${userName}-VIDEOFINAL-${rnd5dig}.mp4`;
 
         return new Promise((resolve, reject) => {
-            const ffmpegCommand = ffmpeg(`temp/${userName}-TOMP3CONV-${rnd5dig}.${contentType}`)
-                .toFormat('mp3')
-                .outputOptions(['-y']);
+            const ffmpegCommand = ffmpeg(`temp/${userName}-TOVIDCONV-${rnd5dig}.${contentType}`)
+                .toFormat('mp4')
+                .outputOptions([
+                    '-y',
+                    '-movflags faststart',
+                    '-pix_fmt yuv420p',
+                    '-vf "scale=trunc(iw/2)*2:trunc(ih/2)*2"'
+                ]);
 
             ffmpegCommand
-                /* .on('start', (commandLine) => console.log('Started FFmpeg with command:', commandLine)) */
                 .on('end', () => {
                     message.reply({
                         files: [{
@@ -63,12 +67,11 @@ module.exports = {
                         }]
                     }).then(() => {
                         resolve(outputPath);
-                        // check if the bot has replied to the message
                         message.reactions.removeAll().catch(console.error);
                     }).catch(reject);
                 })
                 .on('error', (err) => {
-                    reject(new Error('Audio conversion failed: ' + err.message));
+                    reject(new Error('Video conversion failed: ' + err.message));
                 })
                 .save(outputPath);
         });

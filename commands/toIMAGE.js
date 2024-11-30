@@ -1,5 +1,5 @@
 const altnames = ['toimage', 'toimg', '2img', '2image'];
-const whatitdo = 'Converts all video frames to images, supports videos';
+const whatitdo = 'Converts all video frames to images';
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -10,16 +10,17 @@ const archiver = require('archiver');
 
 module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained) {
-        const hasAttachment = currentAttachments || message.attachments;
-        const firstAttachment = hasAttachment.first();
-        const isVideo = firstAttachment && firstAttachment.contentType.includes('video');
-        const attachment = firstAttachment;
         if (message.content.includes('help')) {
             return message.reply({
                 content: `**converts all video frames to images**\n` +
                     `**Usage: ${altnames.join(', ')}\n`
             });
-        } else if (!isVideo && !attachment.contentType.includes('gif')) {
+        }
+        const hasAttachment = currentAttachments || message.attachments;
+        const firstAttachment = hasAttachment.first();
+        const isVideo = firstAttachment && firstAttachment.contentType.includes('video');
+        const attachment = firstAttachment;
+        if (!isVideo && !attachment.contentType.includes('gif')) {
             return message.reply({ content: 'provide a video file to convert.' });
         } else {
             const fileUrl = attachment.url;
@@ -72,9 +73,7 @@ async function convertToImages(message, userName, contentType, rnd5dig) {
 
                     fs.rmdirSync(outputDir, { recursive: true });
                     await message.reply({ files: [zipPath] });
-                    if (message.channel.messages.cache.get(message.id)) {
-                        message.reactions.removeAll().catch(console.error);
-                    }
+                    message.reactions.removeAll().catch(console.error);
                     resolve(zipPath);
                 } catch (err) {
                     reject(new Error('Zipping images failed: ' + err.message));

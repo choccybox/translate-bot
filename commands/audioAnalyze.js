@@ -9,9 +9,6 @@ const ffmpeg = require('fluent-ffmpeg');
 
 module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained) {
-        const hasAttachment = currentAttachments || message.attachments;
-        const firstAttachment = hasAttachment.first();
-        const isVideoOrAudio = firstAttachment && (firstAttachment.contentType.includes('video') || firstAttachment.contentType.includes('audio'));
         if (message.content.includes('help')) {
             return message.reply({
                 content: `*transcribes an audio/video file to text*\n` +
@@ -22,7 +19,11 @@ module.exports = {
                     `**turbo:** balance between accuracy and speed\n` +
                     `**large:** most accurate, slowest\n`,
             });
-        } else if (!isVideoOrAudio) {
+        }
+        const hasAttachment = currentAttachments || message.attachments;
+        const firstAttachment = hasAttachment.first();
+        const isVideoOrAudio = firstAttachment && (firstAttachment.contentType.includes('video') || firstAttachment.contentType.includes('audio'));
+        if (!isVideoOrAudio) {
             return message.reply({ content: 'Please provide an audio or video file to process.' });
         } else {
             const fileUrl = firstAttachment.url;
@@ -66,9 +67,7 @@ module.exports = {
                 const audioData = fs.readFileSync(`temp/${randomName}-S2T-${rnd5dig}.${contentType === 'mp3' ? 'mp3' : 'mp3'}`);
                 message.react('<a:pukekospin:1311021344149868555>').catch(() => message.react('👍'));
                 await processAudio(audioData.toString('base64'), message, randomName, fileName, model, rnd5dig);
-                if (message.channel.messages.cache.get(message.id)) {
-                    message.reactions.removeAll().catch(console.error);
-                }
+                message.reactions.removeAll().catch(console.error);
 
             } catch (error) {
                 console.error('Error processing:', error);
