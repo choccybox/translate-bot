@@ -34,6 +34,24 @@ module.exports = {
             const originalAttachmentPath = `temp/${userName}-TOSPCHCONV-${rnd5dig}.${contentType}`;
             await fs.writeFileSync(originalAttachmentPath, fileData);
 
+            // Check if file is a GIF and convert to MP4 if needed
+            if (firstAttachment.contentType.includes('gif')) {
+                const gifToMp4 = `temp/${userName}-CAP-${rnd5dig}.mp4`;
+                await new Promise((resolve, reject) => {
+                    ffmpeg(originalAttachmentPath)
+                    .toFormat('mp4')
+                    .outputOptions('-movflags faststart')
+                    .output(gifToMp4)
+                    .on('end', () => {
+                        fs.unlinkSync(originalAttachmentPath);
+                        resolve(gifToMp4);
+                    })
+                    .on('error', reject)
+                    .run();
+                });
+                originalAttachmentPath = gifToMp4;
+                }
+
             const { width, height, duration } = await new Promise((resolve, reject) => {
                 ffmpeg.ffprobe(`temp/${userName}-TOSPCHCONV-${rnd5dig}.${contentType}`, (err, metadata) => {
                     if (err) return reject(err);

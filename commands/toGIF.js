@@ -39,16 +39,21 @@ module.exports = {
             // Check for arguments in the command
             let removeTT = false;
             let autoCrop = false;
+            let dontResize = false;
 
             for (const arg of args) {
                 const lowerArg = arg.toLowerCase();
-                if (lowerArg.includes('tt')) {
+                if (lowerArg.includes('tiktok') || lowerArg === 'tt') {
                     console.log('Removing TikTok outro');
                     removeTT = true;
                 }
-                if (lowerArg.includes('autocrop')) {
+                if (lowerArg.includes('autocrop') || lowerArg === 'crop') {
                     console.log('Auto-cropping video');
                     autoCrop = true;
+                }
+                if (lowerArg.includes('dontresize') || lowerArg === 'dr') {
+                    console.log('Keeping original size');
+                    dontResize = true;
                 }
             }
             
@@ -73,7 +78,7 @@ module.exports = {
 
             try {
                 message.react('<a:pukekospin:1311021344149868555>').catch(() => message.react('👍'));
-                await convertToGIF(message, userName, actualUsername, contentType, rnd5dig, height, width, duration, autoCrop, removeTT);
+                await convertToGIF(message, userName, actualUsername, contentType, rnd5dig, height, width, duration, autoCrop, removeTT, dontResize);
                 message.reactions.removeAll().catch(console.error);
             } catch (err) {
                 console.error('Error:', err);
@@ -86,11 +91,12 @@ module.exports = {
 }
 
 
-    async function convertToGIF(message, userName, actualUsername, contentType, rnd5dig, height, width, duration, autoCrop, removeTT) {
+    async function convertToGIF(message, userName, actualUsername, contentType, rnd5dig, height, width, duration, autoCrop, removeTT, dontResize) {
         const outputPath = `temp/${userName}-GIFFINAL-${rnd5dig}.gif`;
 
-        const autoCropFilter = autoCrop ? ';cropdetect:' : '';
-        const removeTTFilter = removeTT ? ';trim=end=' + (Math.round(duration) - 1) : '';
+        const autoCropFilter = autoCrop ? ',cropdetect:' : '';
+        const removeTTFilter = removeTT ? ',trim=end=' + (Math.round(duration) - 1) : '';
+        const dontResizeFilter = dontResize ? '' : `scale=${width}:${height}:flags=lanczos,`;
 
         return new Promise((resolve, reject) => {
             const ffmpegCommand = ffmpeg(`temp/${userName}-TOGIFCONV-${rnd5dig}.${contentType}`)
@@ -108,7 +114,7 @@ module.exports = {
             ffmpegCommand
                 .fps(durfpstable.find(([dur]) => duration < dur)[1])
                 .outputOptions([
-                    '-vf', `scale=${width}:${height}:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=256[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5`
+                    '-vf', `${dontResizeFilter}split[s0][s1];[s0]palettegen=max_colors=256[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5${autoCropFilter}${removeTTFilter}`
                 ])
                 .on('end', () => {
                     message.reply({ files: [{ attachment: outputPath }] }).catch(console.error);
