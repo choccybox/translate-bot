@@ -97,8 +97,6 @@ module.exports = {
                 }]
             });
             message.reactions.removeAll().catch(console.error);
-
-            fs.unlinkSync(finalPath);
             return
 
         } catch (error) {
@@ -180,6 +178,7 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalAt
         fs.unlinkSync(`temp/${userName}-RIOSTRETCH-${rnd5dig}.png`);
         fs.unlinkSync(`temp/${userName}-RIOTEXT-${rnd5dig}.png`);
         fs.unlinkSync(`temp/${userName}-RIOOVERLAID-${rnd5dig}.png`);
+        fs.unlinkSync(finalPath);
         fs.unlinkSync(originalAttachmentPath);
     }
 }
