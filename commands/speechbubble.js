@@ -28,6 +28,8 @@ module.exports = {
             const userName = message.author.id;
             const contentType = attachment.contentType.split('/')[1];
             const rnd5dig = Math.floor(Math.random() * 90000) + 10000;
+
+let originalAttachmentPath = ''
             
             const downloadFile = await axios.get(fileUrl, { responseType: 'arraybuffer' });
             const fileData = downloadFile.data;
