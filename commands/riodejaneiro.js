@@ -80,16 +80,23 @@ module.exports = {
 
             const { width, height } = await getDimensions();
 
+            let extension = originalAttachmentPath.split('.').pop().toLowerCase();
+            if (['jpg', 'jpeg', 'png', 'webp'].includes(extension)) {
+                extension = 'png';
+            } else if (['mkv', 'webm', 'mp4'].includes(extension)) {
+                extension = 'mp4';
+            }
+
             const fontPath = 'fonts/InstagramSans.ttf'; // Path to custom font file
             const overlaidAttachmentPath = `temp/${userName}-RIOOVERLAID-${rnd5dig}.png`;
-            const finalPath = `temp/${userName}-RIOFINAL-${rnd5dig}.${originalAttachmentPath.split('.').pop()}`;
+            const finalPath = `temp/${userName}-RIOFINAL-${rnd5dig}.${extension}`;
 
             // set the font size to 1/10th of the image entire size
             const fontSize = Math.floor(Math.min(width, height) / 10);
 
             // Call function to overlay image and text
             message.react('<a:pukekospin:1311021344149868555>').catch(() => message.react('👍'));
-            await overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, opacity, userName, rnd5dig, customizedText);
+            await overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, opacity, userName, rnd5dig, customizedText, extension);
 
             await message.reply({
                 files: [{
@@ -106,7 +113,7 @@ module.exports = {
     }
 };
 
-async function overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, opacity, userName, rnd5dig, customizedText) {
+async function overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, opacity, userName, rnd5dig, customizedText, extension) {
     try {
         sharp.cache(false);
         // Resize 'riodejaneiro.png' to match the specified width and height and set opacity
@@ -178,7 +185,9 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalAt
         fs.unlinkSync(`temp/${userName}-RIOSTRETCH-${rnd5dig}.png`);
         fs.unlinkSync(`temp/${userName}-RIOTEXT-${rnd5dig}.png`);
         fs.unlinkSync(`temp/${userName}-RIOOVERLAID-${rnd5dig}.png`);
-        fs.unlinkSync(finalPath);
+        setTimeout(() => {
+            fs.unlinkSync(`temp/${userName}-RIOFINAL-${rnd5dig}.${extension}`);
+        }, 10000);
         fs.unlinkSync(originalAttachmentPath);
     }
 }

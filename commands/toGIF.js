@@ -12,10 +12,11 @@ module.exports = {
         if (message.content.includes('help')) {
             return message.reply({
                 content: `**converts a video to a gif**\n` +
-                    `**Usage: ${altnames.join(', ')}\n` +
+                    `**Usage:** ${altnames.join(', ')}\n` +
                     '**Arguments:**\n' +
                     'tt - removes tiktok outro\n' +
-                    'autocrop - automatically crops the video to get rid of black bars\n'
+                    'autocrop - automatically crops the video to get rid of black bars\n' +
+                    'dontresize - keeps the original resolution of the video\n'
             });
         }
         const hasAttachment = currentAttachments || message.attachments;
