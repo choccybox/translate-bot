@@ -28,10 +28,10 @@ module.exports = {
             const userName = message.author.id;
             const contentType = attachment.contentType.split('/')[1];
             const rnd5dig = Math.floor(Math.random() * 90000) + 10000;
-            
+
             const downloadFile = await axios.get(fileUrl, { responseType: 'arraybuffer' });
             const fileData = downloadFile.data;
-            const originalAttachmentPath = `temp/${userName}-TOSPCHCONV-${rnd5dig}.${contentType}`;
+            let originalAttachmentPath = `temp/${userName}-TOSPCHCONV-${rnd5dig}.${contentType}`;
             await fs.writeFileSync(originalAttachmentPath, fileData);
 
             // Check if file is a GIF and convert to MP4 if needed
