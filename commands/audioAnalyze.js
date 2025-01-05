@@ -120,11 +120,11 @@ async function processAudio(base64Audio, message, randomName, fileName, model, r
         console.error(error);
         return message.reply({ content: 'the model fucking gave up dawg, try again ig' });
     } finally {
-        // delete all files that have -S2T-${rnd5dig} in the name
-        fs.readdirSync('./temp').forEach((file) => {
-            if (file.includes('-S2T')) {
-                fs.unlinkSync(`./temp/${file}`);
-            }
-        });
+        fs.unlinkSync(`temp/${randomName}-S2T-${rnd5dig}.mp3`);
+        if (fs.existsSync(`./temp/${randomName}-S2T-${rnd5dig}.txt`)) {
+            setTimeout(() => {
+            fs.unlinkSync(`./temp/${randomName}-S2T-${rnd5dig}.txt`);
+            }, 30000);
+        }
     }
 }

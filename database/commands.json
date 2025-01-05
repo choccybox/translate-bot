@@ -60,48 +60,48 @@
     "file": "speechbubble.js"
   },
   "toaudio": {
-    "file": "toAUDIO.js"
+    "file": "toaudio.js"
   },
   "2audio": {
-    "file": "toAUDIO.js"
+    "file": "toaudio.js"
   },
   "toaud": {
-    "file": "toAUDIO.js"
+    "file": "toaudio.js"
   },
   "2aud": {
-    "file": "toAUDIO.js"
+    "file": "toaudio.js"
   },
   "togif": {
-    "file": "toGIF.js"
+    "file": "togif.js"
   },
   "gif": {
-    "file": "toGIF.js"
+    "file": "togif.js"
   },
   "2gif": {
-    "file": "toGIF.js"
+    "file": "togif.js"
   },
   "toimage": {
-    "file": "toIMAGE.js"
+    "file": "toimage.js"
   },
   "toimg": {
-    "file": "toIMAGE.js"
+    "file": "toimage.js"
   },
   "2img": {
-    "file": "toIMAGE.js"
+    "file": "toimage.js"
   },
   "2image": {
-    "file": "toIMAGE.js"
+    "file": "toimage.js"
   },
   "tovideo": {
-    "file": "toVIDEO.js"
+    "file": "tovideo.js"
   },
   "2video": {
-    "file": "toVIDEO.js"
+    "file": "tovideo.js"
   },
   "tovid": {
-    "file": "toVIDEO.js"
+    "file": "tovideo.js"
   },
   "2vid": {
-    "file": "toVIDEO.js"
+    "file": "tovideo.js"
   }
 }

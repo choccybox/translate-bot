@@ -101,3 +101,4 @@ async function zipImages(sourceDir, zipPath) {
         archive.finalize();
     });
 }
+    //
