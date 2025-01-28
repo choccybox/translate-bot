@@ -7,7 +7,6 @@ const fs = require('fs');
 const axios = require('axios');
 const sharp = require('sharp');
 const ffmpeg = require('fluent-ffmpeg');
-const { error } = require('console');
 
 module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained) {
@@ -36,7 +35,7 @@ module.exports = {
 
             // Check if file is a GIF and convert to MP4 if needed
             if (firstAttachment.contentType.includes('gif')) {
-                const gifToMp4 = `temp/${userName}-CAP-${rnd5dig}.mp4`;
+                const gifToMp4 = `temp/${userName}-TOSPCHCONV-${rnd5dig}.mp4`;
                 await new Promise((resolve, reject) => {
                     ffmpeg(originalAttachmentPath)
                     .toFormat('mp4')
@@ -50,7 +49,9 @@ module.exports = {
                     .run();
                 });
                 originalAttachmentPath = gifToMp4;
-                }
+            } else {
+                originalAttachmentPath = `temp/${userName}-TOSPCHCONV-${rnd5dig}.${contentType}`;
+            }
 
             const { width, height, duration } = await new Promise((resolve, reject) => {
                 ffmpeg.ffprobe(`temp/${userName}-TOSPCHCONV-${rnd5dig}.${contentType}`, (err, metadata) => {
@@ -110,7 +111,7 @@ async function convertToGIF(userName, originalAttachmentPath, contentType, rnd5d
     if (originalAttachmentPath.includes('mp4')) {
         await new Promise((resolve, reject) => {
             ffmpeg(originalAttachmentPath)
-                .input(`temp/${userName}-SPCHSTRETCH-${rnd5dig}.png`)
+                .input(`temp/${userName}-SPCHMASK-${rnd5dig}.png`)
                 .complexFilter([
                     '[0:v][1:v]overlay=0:0[out]'
                 ])

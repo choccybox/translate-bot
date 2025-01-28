@@ -62,17 +62,20 @@ module.exports = {
             const fileData = downloadFile.data;
             await fs.writeFileSync(`temp/${userName}-TOGIFCONV-${rnd5dig}.${contentType}`, fileData);
 
-            const duration = await new Promise((resolve, reject) => {
-                ffmpeg.ffprobe(`temp/${userName}-TOGIFCONV-${rnd5dig}.${contentType}`, (err, metadata) => {
-                    if (err) return reject(err);
-                    const stream = metadata.streams.find(s => s.duration);
-                    if (stream) {
-                        resolve(stream.duration);
-                    } else {
-                        reject(new Error('No stream with duration found'));
-                    }
+            let duration = 0;
+            if (attachment.contentType.includes('video')) {
+                duration = await new Promise((resolve, reject) => {
+                    ffmpeg.ffprobe(`temp/${userName}-TOGIFCONV-${rnd5dig}.${contentType}`, (err, metadata) => {
+                        if (err) return reject(err);
+                        const stream = metadata.streams.find(s => s.duration);
+                        if (stream) {
+                            resolve(stream.duration);
+                        } else {
+                            reject(new Error('No stream with duration found'));
+                        }
+                    });
                 });
-            });
+            }
             if (duration > 60) {
                 return message.reply({ content: 'Video duration is too long, please provide a video with a duration of 60 seconds or less.' });
             }
@@ -94,6 +97,8 @@ module.exports = {
 
     async function convertToGIF(message, userName, actualUsername, contentType, rnd5dig, height, width, duration, autoCrop, removeTT, dontResize) {
         const outputPath = `temp/${userName}-GIFFINAL-${rnd5dig}.gif`;
+
+        console.log(message, userName, actualUsername, contentType, rnd5dig, height, width, duration, autoCrop, removeTT, dontResize);
 
         const autoCropFilter = autoCrop ? ',cropdetect:' : '';
         const removeTTFilter = removeTT ? ',trim=end=' + (Math.round(duration) - 1) : '';
