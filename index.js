@@ -22,10 +22,6 @@ const client = new Client({
 });
 
 const commandsList = require('./database/commands.json');
-const getUnchainableCommands = () => {
-  return Object.keys(commandsList).filter(command => !commandsList[command].isChainable);
-};
-const unchainableCommands = getUnchainableCommands();
 
 client.on('messageCreate', async (message) => {
   if (message.mentions.has(client.user)) {
@@ -37,7 +33,10 @@ client.on('messageCreate', async (message) => {
     if (!currentAttachments && message.reference) {
       const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
       currentAttachments = repliedMessage.attachments.size > 0 ? repliedMessage.attachments : null;
-      // if it doesnt have an attachment, check if it is unchainable command
+    } else if (!currentAttachments && message.content.includes('youtube')) {
+      const youtubeLink = message.content.match(/(https?:\/\/[^\s]+)/g)[0];
+      currentAttachments = new Collection();
+      currentAttachments.set('youtube', { url: youtubeLink });
     } else if (!currentAttachments && message.content.includes('pukeko')) {
       message.reply({ files: [{ attachment: path.join(__dirname, 'images', 'pukeko.jpg') }] });
       return;
@@ -49,7 +48,9 @@ client.on('messageCreate', async (message) => {
       });
       const formattedCommandsString = formattedCommands.join('\n\n');
       message.reply({ content: `${formattedCommandsString}` });
-    }else if (!currentAttachments && message.content.trim() === `<@${client.user.id}>`) {
+    // check the message content for youtube links
+
+    } else if (!currentAttachments && message.content.trim() === `<@${client.user.id}>`) {
       message.reply({ content: 'Please provide an audio or video file to process.' });
       return;
     }
@@ -77,11 +78,10 @@ client.on('messageCreate', async (message) => {
 
         const result = await commandFile.run(message, client, currentAttachments);
 
-        if (!unchainableCommands.includes(commandName)) {
-          if (result && typeof result === 'string') {
-            await message.reply({ content: result }).catch(console.error);
-          }
+        if (result && typeof result === 'string') {
+          await message.reply({ content: result }).catch(console.error);
         }
+        
       } catch (error) {
         console.error(`Error executing command ${commandName}:`, error);
         return message.reply({ content: `An error occurred while processing the command ${commandName}.` });
