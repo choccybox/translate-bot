@@ -44,21 +44,6 @@
   "rdj": {
     "file": "riodejaneiro.js"
   },
-  "speechbubble": {
-    "file": "speechbubble.js"
-  },
-  "spchb": {
-    "file": "speechbubble.js"
-  },
-  "sb": {
-    "file": "speechbubble.js"
-  },
-  "speech": {
-    "file": "speechbubble.js"
-  },
-  "spch": {
-    "file": "speechbubble.js"
-  },
   "toaudio": {
     "file": "toaudio.js"
   },

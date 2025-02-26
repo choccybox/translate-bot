@@ -1,5 +1,5 @@
 const altnames = ['rj', 'rio', 'riodejaneiro', 'rjd', 'rdj'];
-const whatitdo = 'Adds a Rio De Janeiro instagram filter over an image, supports images and videos';
+const whatitdo = 'Adds a Rio De Janeiro instagram filter, supports images and videos';
 
 const fs = require('fs');
 const axios = require('axios');

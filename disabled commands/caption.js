@@ -105,6 +105,15 @@ module.exports = {
             message.react('<a:pukekospin:1311021344149868555>').catch(() => message.react('👍'));
             console.log(convertToGif);
             await overlayImageAndText(message, width, fontSize, fontPath, originalAttachmentPath, userName, rnd5dig, customizedText, convertToGif, duration);
+            
+            // delete all files that have these in their name: CAP CAPFINAL CAPSTRETCH
+            setTimeout(() => {
+                fs.readdirSync('./temp').forEach(file => {
+                    if (file.includes('CAP') || file.includes('CAPFINAL') || file.includes('CAPSTRETCH')) {
+                        fs.unlinkSync(`temp/${file}`);
+                    }
+                });
+            }, 10000);
 
         } catch (error) {
             console.error('Error processing the image:', error);
@@ -208,7 +217,5 @@ async function overlayImageAndText(message, width, fontSize, fontPath, originalA
         console.error('Error overlaying image and text:', error);
         message.reply({ content: `Error overlaying image and text: ${error}`, ephemeral: true });
         return;
-    } finally {
-
     }
 }

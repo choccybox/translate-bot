@@ -1,5 +1,5 @@
 const altnames = ['toaudio', '2audio', 'toaud', '2aud']
-const whatitdo = 'Converts a video to a mp3';
+const whatitdo = 'Converts a video or other audio files to a mp3';
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -11,15 +11,20 @@ module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained) {
         if (message.content.includes('help')) {
             return message.reply({
-                content: `**converts a video to a mp3**\n` +
+                content: `**converts a video and other audio files to a mp3**\n` +
                     `**Usage: ${altnames.join(', ')}\n`
             });
         }
         const hasAttachment = currentAttachments || message.attachments;
         const firstAttachment = hasAttachment.first();
-        const isVideo = firstAttachment && firstAttachment.contentType.includes('video');
-        if (!isVideo) {
-            return message.reply({ content: 'provide a video file to convert.' });
+        const isSupportedFormat = firstAttachment && (firstAttachment.contentType.includes('video') || firstAttachment.contentType.includes('audio'));
+        const isMp3 = firstAttachment && firstAttachment.contentType === 'audio/mpeg';
+
+        if (isMp3) {
+            return message.reply({ content: 'The file is already an mp3.' });
+        }
+        if (!isSupportedFormat) {
+            return message.reply({ content: 'Provide a video or audio file to convert.' });
         } else {
             const attachment = firstAttachment;
             const fileUrl = attachment.url;

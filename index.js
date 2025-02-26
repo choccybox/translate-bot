@@ -48,20 +48,10 @@ client.on('messageCreate', async (message) => {
       });
       const formattedCommandsString = formattedCommands.join('\n\n');
       message.reply({ content: `${formattedCommandsString}` });
-    // check the message content for youtube links
-
     } else if (!currentAttachments && message.content.trim() === `<@${client.user.id}>`) {
       message.reply({ content: 'Please provide an audio or video file to process.' });
       return;
     }
-
-    if (uniqueCommands.length > 1) {
-      const foundNoChainCommand = uniqueCommands.find(command => unchainableCommands.includes(command));
-      if (foundNoChainCommand) {
-        return message.reply({ content: `You cannot chain the command \`${foundNoChainCommand}\` with other commands.` });
-      }
-    }
-
 
     for (const commandName of uniqueCommands) {
       console.log(`Command name: ${commandName}`);

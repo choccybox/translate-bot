@@ -20,7 +20,7 @@
     ]
   },
   "riodejaneiro": {
-    "whatitdoes": "Adds a Rio De Janeiro instagram filter over an image, supports images and videos",
+    "whatitdoes": "Adds a Rio De Janeiro instagram filter, supports images and videos",
     "altnames": [
       "rj",
       "rio",
@@ -29,18 +29,8 @@
       "rdj"
     ]
   },
-  "speechbubble": {
-    "whatitdoes": "adds a speechbubble on top of an image/video, supports images and videos",
-    "altnames": [
-      "speechbubble",
-      "spchb",
-      "sb",
-      "speech",
-      "spch"
-    ]
-  },
   "toaudio": {
-    "whatitdoes": "Converts a video to a mp3",
+    "whatitdoes": "Converts a video or other audio files to a mp3",
     "altnames": [
       "toaudio",
       "2audio",

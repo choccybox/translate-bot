@@ -1,5 +1,5 @@
 const altnames = ['speechbubble', 'spchb', 'sb', 'speech', 'spch']
-const whatitdo = 'adds a speechbubble on top of an image/video, supports images and videos';
+const whatitdo = 'adds a speechbubble, supports images and videos';
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -136,24 +136,32 @@ async function convertToGIF(userName, originalAttachmentPath, contentType, rnd5d
     ]
 
     // Step 3: Chromakey and convert to GIF
-    return new Promise((resolve, reject) => {
-        ffmpeg(extendedAttachmentPath)
-            .fps(durfpstable.find(([dur]) => duration < dur)[1])
-            .outputOptions(
-            '-filter_complex',
-            `[0:v]chromakey=color=0x0000ff:similarity=0.1:blend=0.4[transparent];[transparent]split[transparent1][transparent2];[transparent1]palettegen=stats_mode=diff[palette];[transparent2][palette]paletteuse=dither=bayer:bayer_scale=5`
-            )
-            .outputOptions([
-            '-y',                // Overwrite output file if exists
-            '-c:v', 'gif',       // Output format is GIF
-            ])
-            .save(outputPath)
-            .on('end', () => {
-            resolve(outputPath);
-            })
-            .on('error', reject)
-            .run();
-    });
+    try {
+        return new Promise((resolve, reject) => {
+            ffmpeg(extendedAttachmentPath)
+                .fps(durfpstable.find(([dur]) => duration < dur)[1])
+                .outputOptions(
+                '-filter_complex',
+                `[0:v]chromakey=color=0x0000ff:similarity=0.1:blend=0.4[transparent];[transparent]split[transparent1][transparent2];[transparent1]palettegen=stats_mode=diff[palette];[transparent2][palette]paletteuse=dither=bayer:bayer_scale=5`
+                )
+                .outputOptions([
+                '-y',                // Overwrite output file if exists
+                '-c:v', 'gif',       // Output format is GIF
+                ])
+                .save(outputPath)
+                .on('end', () => {
+                resolve(outputPath);
+                })
+                .on('error', reject)
+                .run();
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        return { attachments: null, error: 'Error converting the file.' };
+    } finally {
+        // delete files
+        fs.unlinkSync(extendedAttachmentPath);
+    }
 }
 
             
