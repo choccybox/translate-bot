@@ -1,5 +1,5 @@
 const altnames = ['toimage', 'toimg', '2img', '2image'];
-const whatitdo = 'Converts all video frames to images';
+const quickdesc = 'Converts all video frames/first frame to image/s';
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -11,9 +11,12 @@ const archiver = require('archiver');
 module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained) {
         if (message.content.includes('help')) {
+            const commandUsed = message.content.split(' ').find(part => part !== 'help' && !part.startsWith('<@'));
             return message.reply({
-                content: `**converts all video frames to images**\n` +
-                    `**Usage: ${altnames.join(', ')}\n`
+                content: `${quickdesc}\n` +
+                    `### Arguments:\n`+
+                    `\`${commandUsed}:frame\` only converts the first frame of the video\n` +
+                    `### Aliases:\n\`${altnames.join(', ')}\``,
             });
         }
         const hasAttachment = currentAttachments || message.attachments;
@@ -40,8 +43,15 @@ module.exports = {
                 console.error('Error:', err);
                 return message.reply({ content: 'Error converting video to gif' });
             } finally {
-                fs.unlinkSync(`temp/${userName}-TOIMGCONV-${rnd5dig}.${contentType}`);
-                fs.unlinkSync(`temp/${userName}-IMAGES-${rnd5dig}.zip`);
+                // delete all files including S2T in the name, only target mp3, mp4 and txt files, wait 30s before deleting
+                const filesToDelete = fs.readdirSync('./temp/').filter((file) => {
+                    return file.includes('TOIMGCONV') || file.includes('IMAGES');
+                });
+                filesToDelete.forEach((file) => {
+                    setTimeout(() => {
+                    fs.unlinkSync(`./temp/${file}`);
+                    }, 10000);
+                });
             }
         }
     }

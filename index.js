@@ -41,10 +41,10 @@ client.on('messageCreate', async (message) => {
       message.reply({ files: [{ attachment: path.join(__dirname, 'images', 'pukeko.jpg') }] });
       return;
     } else if (!currentAttachments && message.content.trim() === `<@${client.user.id}> help`) {
-      // get the file commandsdesc.json and format it correctly into this order: command, whatitdoes, altnames
+      // get the file commandsdesc.json and format it correctly into this order: command, quickdesc, altnames
       const commandsDesc = require('./database/commandsdesc.json');
       const formattedCommands = Object.keys(commandsDesc).map(command => {
-        return `**${command}**: ${commandsDesc[command].whatitdoes}\nAliases: ${commandsDesc[command].altnames.join(', ')}`;
+        return `**${command}:** ${commandsDesc[command].quickdescript}\n**Aliases:** \`${commandsDesc[command].altnames.join(', ')}\``;
       });
       const formattedCommandsString = formattedCommands.join('\n\n');
       message.reply({ content: `${formattedCommandsString}` });
@@ -83,7 +83,7 @@ client.on('messageCreate', async (message) => {
 // Read all .js files in commands folder, log them, and get their first line of code altnames and write those as available commands into a .json file
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 const commands = {};
-const whatitdo = {};
+const quickdesc = {};
 
 commandFiles.forEach(file => {
   const filePath = path.join(__dirname, 'commands', file);
@@ -101,12 +101,12 @@ commandFiles.forEach(file => {
       };
     });
 
-    const whatitdoesMatch = secondLine.match(/const whatitdo = '(.*)'/);
-    if (whatitdoesMatch) {
-      const whatitdoes = whatitdoesMatch[1];
-      whatitdo[file.split('.')[0].toLowerCase()] = {
-        whatitdoes: whatitdoes,
-        altnames: altnames,
+    const quickdescriptMatch = secondLine.match(/const quickdesc = '(.*)'/);
+    if (quickdescriptMatch) {
+      const quickdescript = quickdescriptMatch[1];
+      quickdesc[file.split('.')[0].toLowerCase()] = {
+      quickdescript: quickdescript,
+      altnames: altnames,
       };
     }
   }
@@ -114,7 +114,7 @@ commandFiles.forEach(file => {
 
 // Write the commands to a .json file
 fs.writeFileSync('./database/commands.json', JSON.stringify(commands, null, 2));
-fs.writeFileSync('./database/commandsdesc.json', JSON.stringify(whatitdo, null, 2));
+fs.writeFileSync('./database/commandsdesc.json', JSON.stringify(quickdesc, null, 2));
 
 client.once('ready', async () => {
   const tempDir = './temp';
@@ -143,5 +143,22 @@ client.once('ready', async () => {
 
   console.log(`wake yo ass up bc it's time to go beast mode`);
 });
+
+// present the temp folder as accessible urls for users to click on and download the file immediately
+index.get('/:filename', (req, res) => {
+  const filePath = path.join(__dirname, 'temp', req.params.filename);
+  if (fs.existsSync(filePath)) {
+    res.download(filePath, err => {
+      if (err) {
+        console.error('Error downloading file:', err);
+        res.status(500).send('Internal Server Error');
+      }
+    });
+  } else {
+    res.status(404).send('File Not Found');
+  }
+});
+
+index.use('/temp', express.static(path.join(__dirname, 'temp')));
 
 client.login(process.env.TOKEN);

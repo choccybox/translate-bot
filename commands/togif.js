@@ -1,5 +1,5 @@
 const altnames = ['togif', 'gif', '2gif'];
-const whatitdo = 'Converts a video to a gif';
+const quickdesc = 'Converts a video/image to a gif';
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -10,13 +10,15 @@ const ffmpeg = require('fluent-ffmpeg');
 module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained) {
         if (message.content.includes('help')) {
+            const commandUsed = message.content.split(' ').find(part => part !== 'help' && !part.startsWith('<@'));
             return message.reply({
-                content: `**converts a video to a gif**\n` +
-                    `**Usage:** ${altnames.join(', ')}\n` +
-                    '**Arguments:**\n' +
-                    'tt - removes tiktok outro\n' +
-                    'autocrop - automatically crops the video to get rid of black bars\n' +
-                    'dontresize - keeps the original resolution of the video\n'
+                content: `${quickdesc}\n` +
+                    `### Arguments:\n`+
+                    `\`${commandUsed}:tt\` removes tiktok outro\n` +
+                    `\`${commandUsed}:autocrop\` automatically crops the video to get rid of black bars\n` +
+                    `\`${commandUsed}:dontresize\` keeps the original resolution of the video/image\n` +
+                    `### Examples:\n\`${commandUsed}:tt:autocrop\` \`${commandUsed}:dontresize:tt\`` +
+                    `### Aliases:\n\`${altnames.join(', ')}\``,
             });
         }
         const hasAttachment = currentAttachments || message.attachments;
@@ -69,7 +71,7 @@ module.exports = {
                         if (err) return reject(err);
                         const stream = metadata.streams.find(s => s.duration);
                         if (stream) {
-                            resolve(stream.duration);
+                            resolve(Math.round(stream.duration));
                         } else {
                             reject(new Error('No stream with duration found'));
                         }
@@ -88,7 +90,14 @@ module.exports = {
                 console.error('Error:', err);
                 return message.reply({ content: 'Error converting video to gif' });
             } finally {
-                fs.unlinkSync(`temp/${userName}-TOGIFCONV-${rnd5dig}.${contentType}`);
+                const filesToDelete = fs.readdirSync('./temp/').filter((file) => {
+                    return file.includes('TOGIFCONV') || file.includes('GIFFINAL');
+                });
+                filesToDelete.forEach((file) => {
+                    setTimeout(() => {
+                    fs.unlinkSync(`./temp/${file}`);
+                    }, 10000);
+                });
             }
         }
     }
@@ -114,7 +123,8 @@ module.exports = {
                 [10, 20],
                 [18, 15],
                 [24, 10],
-                [30, 8]
+                [30, 8],
+                [60, 8]
             ]
             
             ffmpegCommand

@@ -1,5 +1,5 @@
 const altnames = ['speechbubble', 'spchb', 'sb', 'speech', 'spch']
-const whatitdo = 'adds a speechbubble, supports images and videos';
+const quickdesc = 'adds a speechbubble, supports images and videos';
 
 const dotenv = require('dotenv');
 dotenv.config();

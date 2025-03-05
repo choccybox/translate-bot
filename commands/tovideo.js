@@ -1,5 +1,5 @@
 const altnames = ['tovideo', '2video', 'tovid', '2vid']
-const whatitdo = 'Converts a gif to a video'
+const quickdesc = 'Converts a gif to a video'
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -11,8 +11,8 @@ module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained) {
         if (message.content.includes('help')) {
             return message.reply({
-                content: `**converts a gif to a video**\n` +
-                    `**Usage: ${altnames.join(', ')}\n`
+                content: `${quickdesc}\n` +
+                    `### Aliases:\n\`${altnames.join(', ')}\``,
             });
         }
         const hasAttachment = currentAttachments || message.attachments;
@@ -39,8 +39,15 @@ module.exports = {
                 console.error('Error:', err);
                 return message.reply({ content: 'Error converting video to gif' });
             } finally {
-                fs.unlinkSync(`temp/${userName}-TOVIDCONV-${rnd5dig}.${contentType}`);
-                fs.unlinkSync(`temp/${userName}-VIDEOFINAL-${rnd5dig}.mp4`);
+                // delete all files including S2T in the name, only target mp3, mp4 and txt files, wait 30s before deleting
+                const filesToDelete = fs.readdirSync('./temp/').filter((file) => {
+                    return file.includes('TOVIDCONV') || file.includes('VIDEOFINAL');
+                });
+                filesToDelete.forEach((file) => {
+                    setTimeout(() => {
+                    fs.unlinkSync(`./temp/${file}`);
+                    }, 10000);
+                });
             }
         }
     }

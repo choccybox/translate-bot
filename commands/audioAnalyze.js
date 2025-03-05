@@ -1,26 +1,28 @@
 const altnames = ['audio', 'aa', 'audioanalyze', 'speech2text', 's2t', 'stt'];
-const whatitdo = 'transcribes audio/video to text, supports audio and video';
+const quickdesc = 'Transcribes audio/video to text, supports audio/video and links (youtube, twitter, instagram)';
 
 const dotenv = require('dotenv');
 dotenv.config();
 const fs = require('fs');
 const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
-const ytdl = require('@distube/ytdl-core');
+const downloader = require('../backbone/dlManager.js');
 
 module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained) {
         if (message.content.includes('help')) {
+            const commandUsed = message.content.split(' ').find(part => part !== 'help' && !part.startsWith('<@'));
             return message.reply({
-                content: `*transcribes an audio/video file to text*\n` +
-                    `**usage:** ${altnames.join(', ')}\n`,
+                content: `${quickdesc}\n` +
+                    `### Examples:\n\`${commandUsed} https://www.youtube.com/watch?v=dQw4w9WgXcQ\` \`${commandUsed} attachment\`\n` +
+                    `### Aliases:\n\`${altnames.join(', ')}\``,
             });
         }
         const hasAttachment = currentAttachments || message.attachments;
         const firstAttachment = hasAttachment.first();
-        const isYoutubeLink = message.content.includes('youtube.com') || message.content.includes('youtu.be');
-        if (!isYoutubeLink) {
-            console.log('is not youtube link');
+        const hasALink = message.content.includes('http') || message.content.includes('www.');
+        if (!hasALink) {
+            console.log('doesnt have a link, using attachment');
             const isVideoOrAudio = firstAttachment && (firstAttachment.contentType.includes('video') || firstAttachment.contentType.includes('audio'));
             if (!isVideoOrAudio) {
                 return message.reply({ content: 'Please provide an audio or video file to process.' });
@@ -62,46 +64,33 @@ module.exports = {
             }
         }
         } else {
-            console.log('is youtube link');
-            const youtubeLink = currentAttachments.first().url;
-            console.log(youtubeLink);
+            console.log('has a link, sending to downloader.js');
             const randomName = message.author.id;
             const rnd5dig = Math.floor(Math.random() * 90000) + 10000;
-
-            // react to the message to show that the bot is processing the audio
-            message.react('🔽');
+            const identifierName = 'S2T';
+            const convertArg = true;
 
             try {
-                const audioStream = ytdl(youtubeLink, {
-                    filter: 'audioonly',
-                    quality: 'lowestaudio',
-                    highWaterMark: 1 << 25 // Fixes buffering issues
+                const downloadLink = message.content.match(/(https?:\/\/[^\s]+)/g)[0];
+                const response = await downloader.downloadURL(message, downloadLink, randomName, rnd5dig, identifierName, convertArg).catch(error => {
+                    console.error('Error sending URL to downloader.js:', error);
+                    return { success: false };
                 });
 
-                const output = `temp/${randomName}-S2T-${rnd5dig}.mp3`;
-                const ffmpegProcess = ffmpeg(audioStream)
-                    .audioCodec('libmp3lame')
-                    .toFormat('mp3')
-                    .on('end', async () => {
-                        console.log('YouTube audio downloaded and converted successfully.');
-                        const audioData = fs.readFileSync(output);
-                        message.reactions.removeAll().catch(console.error);
-                        message.react('<a:pukekospin:1311021344149868555>').catch(() => message.react('👍'));
-                        await processAudio(audioData.toString('base64'), message, randomName, rnd5dig);
-                        message.reactions.removeAll().catch(console.error);
-                    })
-                    .on('error', (err) => {
-                        console.error('FFmpeg error:', err);
-                        message.reply({ content: 'Error processing audio with FFmpeg.' });
-                    })
-                    .save(output);
-                    
-            } catch (err) {
-                console.error('Error downloading YouTube audio:', err);
-                return message.reply({ content: 'Error downloading YouTube audio.' });
+                if (response.success) {
+                    const audioData = fs.readFileSync(`temp/${randomName}-S2T-${rnd5dig}.mp3`);
+                    message.reactions.removeAll().catch(console.error);
+                    message.react('<a:pukekospin:1311021344149868555>').catch(() => message.react('👍'));
+                    await processAudio(audioData.toString('base64'), message, randomName, rnd5dig);
+                    message.reactions.removeAll().catch(console.error);
+                } else {
+                    message.reactions.removeAll().catch(console.error);
+                    message.reply({ content: response.message });
+                }
+            } catch (error) {
+                console.error('Error sending URL to downloader.js:', error);
+                message.reply({ content: 'Error sending URL to downloader.js.' });
             }
-
-
         }
     }
 };
@@ -135,11 +124,7 @@ async function processAudio(base64Audio, message, randomName, rnd5dig) {
         const filesToDelete = fs.readdirSync('./temp/').filter((file) => {
             return file.includes('S2T');
         });
-
-        console.log('Files to delete:', filesToDelete);
-
         filesToDelete.forEach((file) => {
-            console.log(`Deleting file: ${file}`);
             setTimeout(() => {
             fs.unlinkSync(`./temp/${file}`);
             }, 5000);

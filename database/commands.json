@@ -1,33 +1,30 @@
 {
   "audio": {
-    "file": "audioAnalyze.js"
+    "file": "audioanalyze.js"
   },
   "aa": {
-    "file": "audioAnalyze.js"
+    "file": "audioanalyze.js"
   },
   "audioanalyze": {
-    "file": "audioAnalyze.js"
+    "file": "audioanalyze.js"
   },
   "speech2text": {
-    "file": "audioAnalyze.js"
+    "file": "audioanalyze.js"
   },
   "s2t": {
-    "file": "audioAnalyze.js"
+    "file": "audioanalyze.js"
   },
   "stt": {
-    "file": "audioAnalyze.js"
+    "file": "audioanalyze.js"
   },
-  "caption": {
-    "file": "caption.js"
+  "download": {
+    "file": "downloader.js"
   },
-  "cap": {
-    "file": "caption.js"
+  "down": {
+    "file": "downloader.js"
   },
-  "text": {
-    "file": "caption.js"
-  },
-  "txt": {
-    "file": "caption.js"
+  "dl": {
+    "file": "downloader.js"
   },
   "rj": {
     "file": "riodejaneiro.js"

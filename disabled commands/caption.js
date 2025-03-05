@@ -1,5 +1,5 @@
 const altnames = ['caption', 'cap', 'text', 'txt'];
-const whatitdo = 'Adds a caption to an image, supports images and videos';
+const quickdesc = 'Adds a caption to an image, supports images and videos';
 
 const fs = require('fs');
 const axios = require('axios');

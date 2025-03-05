@@ -1,6 +1,6 @@
 {
   "audioanalyze": {
-    "whatitdoes": "transcribes audio/video to text, supports audio and video",
+    "quickdescript": "Transcribes audio/video to text, supports audio/video and links (youtube, twitter, instagram)",
     "altnames": [
       "audio",
       "aa",
@@ -10,17 +10,16 @@
       "stt"
     ]
   },
-  "caption": {
-    "whatitdoes": "Adds a caption to an image, supports images and videos",
+  "downloader": {
+    "quickdescript": "Downloads a video/audio from social platforms (YouTube, Twitter, Instagram)",
     "altnames": [
-      "caption",
-      "cap",
-      "text",
-      "txt"
+      "download",
+      "down",
+      "dl"
     ]
   },
   "riodejaneiro": {
-    "whatitdoes": "Adds a Rio De Janeiro instagram filter, supports images and videos",
+    "quickdescript": "Adds a Rio De Janeiro instagram filter over image/video",
     "altnames": [
       "rj",
       "rio",
@@ -30,7 +29,7 @@
     ]
   },
   "toaudio": {
-    "whatitdoes": "Converts a video or other audio files to a mp3",
+    "quickdescript": "Converts a video or other audio files to a mp3",
     "altnames": [
       "toaudio",
       "2audio",
@@ -39,7 +38,7 @@
     ]
   },
   "togif": {
-    "whatitdoes": "Converts a video to a gif",
+    "quickdescript": "Converts a video/image to a gif",
     "altnames": [
       "togif",
       "gif",
@@ -47,7 +46,7 @@
     ]
   },
   "toimage": {
-    "whatitdoes": "Converts all video frames to images",
+    "quickdescript": "Converts all video frames/first frame to image/s",
     "altnames": [
       "toimage",
       "toimg",
@@ -56,7 +55,7 @@
     ]
   },
   "tovideo": {
-    "whatitdoes": "Converts a gif to a video",
+    "quickdescript": "Converts a gif to a video",
     "altnames": [
       "tovideo",
       "2video",

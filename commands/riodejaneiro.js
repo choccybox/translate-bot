@@ -1,25 +1,33 @@
 const altnames = ['rj', 'rio', 'riodejaneiro', 'rjd', 'rdj'];
-const whatitdo = 'Adds a Rio De Janeiro instagram filter, supports images and videos';
+const quickdesc = 'Adds a Rio De Janeiro instagram filter over image/video';
 
 const fs = require('fs');
 const axios = require('axios');
-const dotenv = require('dotenv').config();
 const sharp = require('sharp');
-const path = require('path');
 const { generate } = require('text-to-image');
 const ffmpeg = require('fluent-ffmpeg');
 
 module.exports = {
     run: async function handleMessage(message, client, currentAttachments, isChained) {
         if (message.content.includes('help')) {
+            // console the message content and use the command that user used in the content
+            const commandUsed = message.content.split(' ').find(part => part !== 'help' && !part.startsWith('<@'));
             return message.reply({
-                content: 'Adds a **Rio De Janeiro** instagram filter over an image\n' +
-                    'Arguments: `rio:intesity` where intensity is a number between 2 and 8. (default is 5)\nrio:customtext` where customtext is any different text you want (can be combined with intesity)\n' +
-                    'Available alt names:`' + `${altnames.join(', ')}` + '`',
+                content: `${quickdesc}\n` +
+                    `### Arguments:\n`+
+                    `\`${commandUsed}:intensity\` intesity of the filter, number between 2 and 8\n` +
+                    `\`${commandUsed}:customtext\` input your own text\n` +
+                    `\`${commandUsed}:notext\` removes text from the image\n` +
+                    `### Examples:\n\`${commandUsed}:3\` \`${commandUsed}:7:never gonna\` \`${commandUsed}:notext\`\n` +
+                    `### Aliases:\n\`${altnames.join(', ')}\``,
             });
         }
         const hasAttachment = currentAttachments || message.attachments;
         const firstAttachment = hasAttachment.first();
+        // check if there is an attachment, if not return a message
+        if (!firstAttachment) {
+            return message.reply({ content: 'Please provide an image or video to process.' });
+        }
         const isImage = firstAttachment && firstAttachment.contentType.includes('image') || firstAttachment.contentType.includes('video');
         if (!isImage || !firstAttachment) {
             return message.reply({ content: 'Please provide an audio or video file to process.' });
@@ -30,25 +38,30 @@ module.exports = {
         const args = message.content.split(' ');
         let intensityDecimal = 0.5; // Default intensity
         let customText = 'Rio De Janeiro'; // Default text
+        let useText = true;
 
         if (args.length > 1 && args[1].includes(':')) {
             const parts = message.content.split(':');
-            if (parts.length === 2) {
-                if (isNaN(parts[1])) {
-                    customText = parts.slice(1).join(':');
-                } else {
-                    intensityDecimal = parseInt(parts[1], 10) / 10 || 0.5;
-                }
+            if (parts.includes('notext')) {
+            useText = false;
+            } else if (parts.length === 2) {
+            if (isNaN(parts[1])) {
+                customText = parts.slice(1).join(':');
+            } else {
+                intensityDecimal = parseInt(parts[1], 10) / 10 || 0.5;
+            }
             } else if (parts.length >= 3) {
-                if (isNaN(parts[1])) {
-                    customText = parts.slice(1, -1).join(':');
-                    intensityDecimal = parseInt(parts[parts.length - 1], 10) / 10 || 0.5;
-                } else {
-                    intensityDecimal = parseInt(parts[1], 10) / 10 || 0.5;
-                    customText = parts.slice(2).join(':');
-                }
+            if (isNaN(parts[1])) {
+                customText = parts.slice(1, -1).join(':');
+                intensityDecimal = parseInt(parts[parts.length - 1], 10) / 10 || 0.5;
+            } else {
+                intensityDecimal = parseInt(parts[1], 10) / 10 || 0.5;
+                customText = parts.slice(2).join(':');
+            }
             }
         }
+
+        console.log('Intensity:', intensityDecimal, 'Custom text:', customText, 'Use text:', useText);
 
         const attachmentURL = firstAttachment.url;
 
@@ -57,6 +70,7 @@ module.exports = {
             const opacity = intensityDecimal;
             const rnd5dig = Math.floor(Math.random() * 90000) + 10000;
             const customizedText = customText ? customText : 'Rio De Janeiro';
+            const useTextOverlay = useText;
 
             // Download the base attachment, convert gifs to mp4
             const downloadAttachment = await axios.get(attachmentURL, { responseType: 'arraybuffer' });
@@ -89,22 +103,14 @@ module.exports = {
 
             const fontPath = 'fonts/InstagramSans.ttf'; // Path to custom font file
             const overlaidAttachmentPath = `temp/${userName}-RIOOVERLAID-${rnd5dig}.png`;
-            const finalPath = `temp/${userName}-RIOFINAL-${rnd5dig}.${extension}`;
 
             // set the font size to 1/10th of the image entire size
             const fontSize = Math.floor(Math.min(width, height) / 10);
 
             // Call function to overlay image and text
             message.react('<a:pukekospin:1311021344149868555>').catch(() => message.react('👍'));
-            await overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, opacity, userName, rnd5dig, customizedText, extension);
-
-            await message.reply({
-                files: [{
-                    attachment: finalPath
-                }]
-            });
-            message.reactions.removeAll().catch(console.error);
-            return
+            await overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, opacity, userName, rnd5dig, customizedText, useTextOverlay, extension, message);
+            return;
 
         } catch (error) {
             console.error('Error processing the image:', error);
@@ -113,7 +119,7 @@ module.exports = {
     }
 };
 
-async function overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, opacity, userName, rnd5dig, customizedText, extension) {
+async function overlayImageAndText(width, height, fontSize, fontPath, originalAttachmentPath, overlaidAttachmentPath, opacity, userName, rnd5dig, customizedText, useTextOverlay, extension, message) {
     try {
         sharp.cache(false);
         // Resize 'riodejaneiro.png' to match the specified width and height and set opacity
@@ -123,8 +129,9 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalAt
             .toBuffer();
             fs.writeFileSync(`temp/${userName}-RIOSTRETCH-${rnd5dig}.png`, overlayImage);
 
-        // Generate text image using 'text-to-image' module
-        const dataUri = await generate(customizedText, {
+        if (useTextOverlay) {
+            // Generate text image using 'text-to-image' module
+            const dataUri = await generate(customizedText, {
             debug: true,
             maxWidth: width,
             customHeight: height,
@@ -136,15 +143,19 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalAt
             textColor: 'white',
             textAlign: 'center',
             verticalAlign: 'center',
-        });
-        const base64Data = dataUri.replace(/^data:image\/png;base64,/, '');
-        fs.writeFileSync(`temp/${userName}-RIOTEXT-${rnd5dig}.png`, base64Data, 'base64');
+            });
+            const base64Data = dataUri.replace(/^data:image\/png;base64,/, '');
+            fs.writeFileSync(`temp/${userName}-RIOTEXT-${rnd5dig}.png`, base64Data, 'base64');
 
-        // overlay the text image on the resized overlay image
-        const overlayedImage = await sharp(`temp/${userName}-RIOSTRETCH-${rnd5dig}.png`)
+            // overlay the text image on the resized overlay image
+            const overlayedImage = await sharp(`temp/${userName}-RIOSTRETCH-${rnd5dig}.png`)
             .composite([{ input: `temp/${userName}-RIOTEXT-${rnd5dig}.png` }])
             .toBuffer();
             fs.writeFileSync(overlaidAttachmentPath, overlayedImage);
+        } else {
+            // If no text overlay, just use the resized overlay image
+            fs.writeFileSync(overlaidAttachmentPath, overlayImage);
+        }
         
         // if file is a video, use ffmpeg to overlay the image over the video
         if (originalAttachmentPath.includes('mp4')) {
@@ -168,26 +179,35 @@ async function overlayImageAndText(width, height, fontSize, fontPath, originalAt
                     .on('error', reject)
                     .run();
             });
-            return videoOutputPath;
         } else {
             // overlay the image on the original image
             const overlayedImage = await sharp(originalAttachmentPath)
                 .composite([{ input: overlaidAttachmentPath }])
                 .toBuffer();
             fs.writeFileSync(`temp/${userName}-RIOFINAL-${rnd5dig}.png`, overlayedImage);
-            return `temp/${userName}-RIOFINAL-${rnd5dig}.png`;
         }
+
+        const finalFile = fs.readdirSync('./temp/').find(file => file.includes(`RIOFINAL-${rnd5dig}`));
+        const finalFilePath = `temp/${finalFile}`;
+        
+        message.reply({
+            files: [{
+            attachment: finalFilePath
+            }]
+        });
+        message.reactions.removeAll().catch(console.error);
 
     } catch (error) {
         console.error('Error overlaying image and text:', error);
         throw new Error('Error overlaying image and text');
     } finally {
-        fs.unlinkSync(`temp/${userName}-RIOSTRETCH-${rnd5dig}.png`);
-        fs.unlinkSync(`temp/${userName}-RIOTEXT-${rnd5dig}.png`);
-        fs.unlinkSync(`temp/${userName}-RIOOVERLAID-${rnd5dig}.png`);
-        setTimeout(() => {
-            fs.unlinkSync(`temp/${userName}-RIOFINAL-${rnd5dig}.${extension}`);
-        }, 10000);
-        fs.unlinkSync(originalAttachmentPath);
+        const filesToDelete = fs.readdirSync('./temp/').filter((file) => {
+            return file.includes('RIOSTRETCH') || file.includes('RIOTEXT') || file.includes('RIOOVERLAID') || file.includes('RIOFINAL') || file.includes('RIO');
+        });
+        filesToDelete.forEach((file) => {
+            setTimeout(() => {
+            fs.unlinkSync(`./temp/${file}`);
+            }, 10000);
+        });
     }
 }
