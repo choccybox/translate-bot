@@ -83,7 +83,7 @@ module.exports = {
                         const fileData = fs.readFileSync(filePath);
                         await message.reply({ files: [{ attachment: fileData, name: filePath.split('/').pop() }] });
                     } else {
-                        const fileUrl = `http://localhost/${filePath}`;
+                        const fileUrl = `${process.env.UPLOADURL}${filePath}`;
                         await message.reply({ content: `File is too large to send. You can download it from [here](${fileUrl}).` });
                     }
                     message.reactions.removeAll().catch(console.error);
