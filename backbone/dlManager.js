@@ -17,7 +17,7 @@ async function downloadYoutube(message, downloadLink, randomName, rnd5dig, ident
             });
         
             if (englishVideo.length === 0) {
-            const selectedFormat = ytdl.filterFormats(info.formats, 'videoandaudio')[0];
+            const selectedFormat = ytdl.filterFormats(info.formats, 'videoandaudio').sort((a, b) => b.bitrate - a.bitrate)[0];
                     
             const videoStream = ytdl(downloadLink, {
                 format: selectedFormat,
