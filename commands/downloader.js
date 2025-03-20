@@ -47,7 +47,6 @@ module.exports = {
                     convertArg = false;
                 }        
                 
-                message.reactions.removeAll().catch(console.error);
                 console.log(convertArg);
                 const response = await downloader.downloadURL(message, downloadLink, randomName, rnd5dig, identifierName, convertArg).catch(error => {
                     console.error('Error sending URL to downloader.js:', error);
@@ -55,18 +54,21 @@ module.exports = {
                 });
 
                 if (!response.success) {
-                    return message.reply({ content: 'Error retrieving lyrics. Please try again later.' });
+                    return message.reply({ content: 'something went wrong, please try again.' });
                 }
 
                 console.log(response);
 
                 if (response.success) {
+                    message.reactions.removeAll().catch(console.error);
                     const findFile = (baseName) => {
                         const files = fs.readdirSync('./temp/');
                         return files.find(file => file.startsWith(baseName));
                     };
 
-                    let fileName = `${randomName}-${identifierName}-${rnd5dig}`;
+                    let fileName = response.title;
+                    // Clean the filename of invalid characters
+                    fileName = fileName.replace(/[<>:"/\\|?*]/g, '_');
                     let filePath = `temp/${fileName}.${convertArg ? 'mp4' : 'mp3'}`;
 
                     if (!fs.existsSync(filePath)) {
@@ -84,28 +86,28 @@ module.exports = {
                         await message.reply({ files: [{ attachment: fileData, name: filePath.split('/').pop() }] });
                     } else {
                         const fileUrl = `${process.env.UPLOADURL}/${fileName}.${convertArg ? 'mp4' : 'mp3'}`;
-                        await message.reply({ content: `File is too large to send. You can download it from [here](${fileUrl}).` });
+                        await message.reply({ content: `File is too large to send. You can download it from [here](${fileUrl}).\nYour file will be deleted from the servers in 5 minutes.` });
                     }
                     message.reactions.removeAll().catch(console.error);
+
+                    // delete all files including the title in the name, only target mp3, mp4 and txt files, wait 30s before deleting
+                    const filesToDelete = fs.readdirSync('./temp/').filter((file) => {
+                        return file.includes(response.title) && (file.endsWith('.mp3') || file.endsWith('.mp4'));
+                    });
+                    filesToDelete.forEach((file) => {
+                        const filePath = `./temp/${file}`;
+                        const fileSize = fs.statSync(filePath).size;
+                        const deleteDelay = fileSize < 10 * 1024 * 1024 ? 5000 : 300000; // 5 seconds for small files, 5 minutes for large files
+                        setTimeout(() => {
+                            fs.unlinkSync(filePath);
+                        }, deleteDelay);
+                    });
                 } else {
                     message.reply({ content: 'Error sending URL to downloader.js.' });
                 }
             } catch (error) {
                 console.error('Error sending URL to downloader.js:', error);
                 message.reply({ content: 'Error sending URL to downloader.js.' });
-            } finally {
-                // delete all files including S2T in the name, only target mp3, mp4 and txt files, wait 30s before deleting
-                const filesToDelete = fs.readdirSync('./temp/').filter((file) => {
-                    return file.includes('DOWN');
-                });
-                filesToDelete.forEach((file) => {
-                    const filePath = `./temp/${file}`;
-                    const fileSize = fs.statSync(filePath).size;
-                    const deleteDelay = fileSize < 10 * 1024 * 1024 ? 5000 : 300000; // 5 seconds for small files, 5 minutes for large files
-                    setTimeout(() => {
-                        fs.unlinkSync(filePath);
-                    }, deleteDelay);
-                });
             }
         }
     }
